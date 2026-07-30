@@ -5930,7 +5930,7 @@ function saveDisplaySettings() {
   ds.timerColorRunning  = qs('#ds-timer-color-running').value;
   ds.timerColorPaused   = qs('#ds-timer-color-paused').value;
   ds.timerColorFinished = qs('#ds-timer-color-finished').value;
-  // broadcast updated settings live
+  save();
   if (S.bc) S.bc.postMessage({ type: 'update-settings', settings: getEffectiveDisplaySettings() });
 }
 
@@ -6090,6 +6090,7 @@ function bindAll() {
     S.scenario.displaySettings.defaultBgFileId   = null;
     S.scenario.displaySettings.defaultBgFileName = null;
     qs('#ds-default-bg-name').textContent = '未選択';
+    save();
   };
 
   qs('#btn-save-settings').onclick = saveSettings;
@@ -7369,6 +7370,7 @@ function pickerConfirm() {
     S.scenario.displaySettings.defaultBgFileId   = f.fileId;
     S.scenario.displaySettings.defaultBgFileName = f.name;
     qs('#ds-default-bg-name').textContent = f.name;
+    save();
   }
   closeModal('ov-picker');
 }
