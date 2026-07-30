@@ -138,6 +138,7 @@
       max-width: 80vw; word-break: break-all;
     }
     #dbg-toast.show { opacity: 1; }
+    body:not(.debug-mode) #dbg-toast { display: none; }
   </style>
 </head>
 <body>
@@ -309,10 +310,16 @@
       }
     }
 
-    // ── Debug toast ──
+    // ── Debug ──
+    // 通常: console.log のみ（devtools で確認）
+    // 開発: URL に ?debug を付けると画面右上トーストも表示
+    const _DEBUG = new URLSearchParams(location.search).has('debug');
+    if (_DEBUG) document.body.classList.add('debug-mode');
     const _dbgEl = document.getElementById('dbg-toast');
     let _dbgTimer = null;
     function dbg(msg) {
+      console.log('[GM-timer]', msg);
+      if (!_DEBUG) return;
       _dbgEl.textContent = msg;
       _dbgEl.classList.add('show');
       clearTimeout(_dbgTimer);
