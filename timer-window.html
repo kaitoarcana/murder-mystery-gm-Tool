@@ -2,208 +2,343 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-store">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>タイマー</title>
+  <title>フェイズウィンドウ</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      background: #08081a;
-      color: #fff;
-      font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      background: #000;
+      width: 100vw; height: 100vh;
       overflow: hidden;
       user-select: none;
+      font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif;
     }
 
-    #phase-name {
-      font-size: clamp(1.2rem, 3vw, 2rem);
-      color: rgba(255,255,255,0.45);
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      margin-bottom: clamp(16px, 3vh, 36px);
-      min-height: 1.4em;
-      text-align: center;
-      padding: 0 20px;
+    /* ── Background layers ── */
+    .bg-layer {
+      position: fixed; inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+    }
+    #bg-b { z-index: 2; opacity: 0; }
+    #bg-overlay {
+      position: fixed; inset: 0; z-index: 3;
+      pointer-events: none;
+      transition: background 0.4s;
     }
 
-    #time {
-      font-size: clamp(5rem, 18vw, 15rem);
-      font-weight: 700;
-      font-family: 'Courier New', 'Consolas', monospace;
-      letter-spacing: 0.05em;
-      line-height: 1;
-      transition: color 0.4s;
-      color: #fff;
-      text-shadow: 0 0 60px rgba(255,255,255,0.12);
-    }
-    #time.running  { color: #3ecf8e; text-shadow: 0 0 80px rgba(62,207,142,0.25); }
-    #time.paused   { color: #f5a623; text-shadow: 0 0 80px rgba(245,166,35,0.25); }
-    #time.finished { color: #e05252; text-shadow: 0 0 80px rgba(224,82,82,0.4); animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity: 0.2; } }
-
-    .progress-wrap {
-      width: clamp(260px, 55vw, 640px);
-      height: 6px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 3px;
-      margin-top: clamp(24px, 4vh, 48px);
-      overflow: hidden;
-    }
-    #progress {
-      height: 100%;
-      border-radius: 3px;
-      background: #3ecf8e;
-      transition: width 1s linear, background 0.4s;
-      width: 100%;
-    }
-
-    #status {
-      margin-top: 20px;
-      font-size: clamp(0.75rem, 1.5vw, 1rem);
-      color: rgba(255,255,255,0.25);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    /* subtle gradient bg animation */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse at 50% 100%, rgba(62,207,142,0.04) 0%, transparent 60%);
+    /* ── Content overlays ── */
+    #content {
+      position: fixed; inset: 0; z-index: 10;
       pointer-events: none;
     }
-
-    /* Video overlay */
-    #video-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
-    #video-overlay.active { display: flex; }
-    #video-player {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      outline: none;
-      background: #000;
-    }
-    /* 全画面ボタン */
-    #btn-fullscreen {
-      display: none;
+    .overlay-el {
       position: absolute;
-      bottom: 20px;
-      right: 20px;
-      background: rgba(0,0,0,0.6);
+      text-align: center;
+      pointer-events: none;
+      line-height: 1.3;
+    }
+    .overlay-el.hidden { display: none !important; }
+
+
+    /* Timer */
+    #timer-wrap {
+      text-align: center;
+      pointer-events: auto; /* ドラッグ操作のためマウスイベントを有効化 */
+      cursor: grab;
+    }
+    #timer-wrap:active { cursor: grabbing; }
+    #time {
+      font-family: 'Courier New', 'Consolas', monospace;
+      font-weight: 700;
+      line-height: 1;
+      text-shadow: 0 2px 24px rgba(0,0,0,0.8);
+      transition: color 0.4s;
+    }
+    #time.finished { animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0.3; } }
+    #progress-wrap { display: none; }
+
+    /* ── Controls (hover reveal) ── */
+    #controls {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      z-index: 200;
+      display: flex; gap: 8px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    body:hover #controls { opacity: 1; pointer-events: auto; }
+    .ctrl-btn {
+      background: rgba(0,0,0,0.65);
       color: #fff;
       border: 1px solid rgba(255,255,255,0.3);
       border-radius: 8px;
-      padding: 10px 18px;
-      font-size: 15px;
+      padding: 8px 16px; font-size: 13px;
       cursor: pointer;
-      z-index: 10;
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(6px);
     }
-    #btn-fullscreen.show { display: block; }
-    #btn-fullscreen:hover { background: rgba(62,207,142,0.7); }
-    /* クリックで再生を促すオーバーレイ */
+    .ctrl-btn:hover { background: rgba(255,255,255,0.2); }
+
+    /* ── Video overlay ── */
+    #video-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: #000;
+      z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    #video-overlay.active { display: flex; }
+    #video-player {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      outline: none; background: #000;
+    }
     #play-prompt {
       display: none;
-      position: absolute;
-      inset: 0;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 16px;
-      cursor: pointer;
-      z-index: 5;
+      position: absolute; inset: 0;
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+      cursor: pointer; z-index: 5;
     }
     #play-prompt.show { display: flex; }
     #play-prompt-btn {
-      width: 80px;
-      height: 80px;
+      width: 80px; height: 80px;
       border-radius: 50%;
       background: rgba(62,207,142,0.85);
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      color: #fff;
-      backdrop-filter: blur(4px);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; color: #fff;
     }
     #play-prompt p { color: rgba(255,255,255,0.7); font-size: 14px; }
+
+    /* ESC hint */
+    #esc-hint {
+      position: fixed; top: 16px; right: 16px;
+      z-index: 201;
+      font-size: 11px; color: rgba(255,255,255,0.25);
+      letter-spacing: 1px;
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    body:fullscreen #esc-hint,
+    body:-webkit-full-screen #esc-hint { opacity: 1; }
+
+    /* Debug toast */
+    #dbg-toast {
+      position: fixed; top: 12px; left: 12px; z-index: 999;
+      background: rgba(0,0,0,0.8); color: #0f0;
+      font-size: 11px; font-family: monospace;
+      padding: 6px 10px; border-radius: 4px;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.3s;
+      max-width: 80vw; word-break: break-all;
+    }
+    #dbg-toast.show { opacity: 1; }
   </style>
 </head>
 <body>
+  <div id="bg-a" class="bg-layer"></div>
+  <div id="bg-b" class="bg-layer"></div>
+  <div id="bg-overlay"></div>
+
+  <div id="content">
+    <div id="timer-wrap" class="overlay-el">
+      <div id="time">--:--</div>
+      <div id="progress-wrap"><div id="progress"></div></div>
+    </div>
+  </div>
+
+  <!-- テキストオーバーレイ -->
+  <div id="text-overlay" style="display:none;position:absolute;bottom:8%;left:50%;transform:translateX(-50%);width:90%;max-width:900px;z-index:60;pointer-events:none">
+    <div id="text-overlay-inner" style="background:rgba(0,0,0,0.72);color:#fff;font-size:clamp(16px,2.5vw,28px);line-height:1.7;padding:20px 28px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);text-align:center;white-space:pre-wrap;backdrop-filter:blur(4px)"></div>
+    <div id="text-overlay-counter" style="text-align:right;font-size:11px;color:rgba(255,255,255,0.45);margin-top:4px;padding-right:4px"></div>
+  </div>
+
+  <div id="esc-hint">ESC で全画面終了</div>
+  <div id="dbg-toast"></div>
+
+  <div id="controls">
+    <button class="ctrl-btn" onclick="toggleFullscreen()">🖥 全画面</button>
+  </div>
+
+  <!-- 得点表オーバーレイ -->
+  <div id="score-overlay" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.88);overflow-y:auto;padding:clamp(16px,4vw,60px)">
+    <button onclick="hideScoreTable()"
+      style="position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:14px;z-index:2">✕ 閉じる</button>
+    <div id="score-table-container"></div>
+  </div>
+
   <div id="video-overlay">
-    <video id="video-player" controls playsinline crossorigin="anonymous"></video>
-    <button id="btn-fullscreen" onclick="enterFullscreen()">🔲 全画面</button>
+    <video id="video-player" playsinline crossorigin="anonymous"></video>
     <div id="play-prompt" onclick="resumePlay()">
       <button id="play-prompt-btn">▶</button>
       <p>クリックして再生</p>
     </div>
   </div>
 
-  <div id="phase-name">—</div>
-  <div id="time">00:00</div>
-  <div class="progress-wrap">
-    <div id="progress"></div>
-  </div>
-  <div id="status">待機中</div>
-
   <script>
+    // ── Defaults ──
+    let settings = {
+      timerVisible: true,
+      timerPosition: 'bottom-center',
+      timerSize: 'xl',
+      timerColor: '#ffffff',
+      bgOverlayOpacity: 35,
+    };
+
+    // ── Elements ──
+    const bgA        = document.getElementById('bg-a');
+    const bgB        = document.getElementById('bg-b');
+    const bgOverlay  = document.getElementById('bg-overlay');
     const timeEl     = document.getElementById('time');
-    const phaseEl    = document.getElementById('phase-name');
     const progressEl = document.getElementById('progress');
-    const statusEl   = document.getElementById('status');
+    const timerWrap  = document.getElementById('timer-wrap');
 
-    const STATUS = { running: '進行中', paused: '一時停止', stopped: '停止中' };
-    const COLOR  = { running: '#3ecf8e', paused: '#f5a623', stopped: '#e05252' };
+    // ── Size map ──
+    const SIZE = {
+      sm: { timer: 'clamp(2.5rem, 8vw, 4rem)'  },
+      md: { timer: 'clamp(4rem,  12vw, 7rem)'  },
+      lg: { timer: 'clamp(6rem,  15vw, 10rem)' },
+      xl: { timer: 'clamp(7rem,  18vw, 14rem)' },
+    };
 
-    function update({ rem, total, state, phase }) {
-      const m = Math.floor(rem / 60), s = rem % 60;
-      timeEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      phaseEl.textContent = phase || '—';
+    // ── Position map ──
+    const POS = {
+      'top-left':      { top:'8%',    left:'5%',   right:'auto', bottom:'auto', transform:'none' },
+      'top-center':    { top:'8%',    left:'50%',  right:'auto', bottom:'auto', transform:'translateX(-50%)' },
+      'top-right':     { top:'8%',    right:'5%',  left:'auto',  bottom:'auto', transform:'none' },
+      'center':        { top:'50%',   left:'50%',  right:'auto', bottom:'auto', transform:'translate(-50%,-50%)' },
+      'middle-left':   { top:'50%',   left:'5%',   right:'auto', bottom:'auto', transform:'translateY(-50%)' },
+      'middle-right':  { top:'50%',   right:'5%',  left:'auto',  bottom:'auto', transform:'translateY(-50%)' },
+      'bottom-left':   { bottom:'8%', left:'5%',   right:'auto', top:'auto',    transform:'none' },
+      'bottom-center': { bottom:'8%', left:'50%',  right:'auto', top:'auto',    transform:'translateX(-50%)' },
+      'bottom-right':  { bottom:'8%', right:'5%',  left:'auto',  top:'auto',    transform:'none' },
+    };
+
+    function applyPos(el, preset) {
+      const p = POS[preset] || POS['bottom-center'];
+      Object.assign(el.style, { position: 'absolute', ...p });
+    }
+
+    // 状態別タイマー色のデフォルト値
+    let timerColors = {
+      stopped:  '#ffffff',
+      running:  '#3ecf8e',
+      paused:   '#f5a623',
+      finished: '#e05252',
+    };
+
+    // ── Apply settings ──
+    function applySettings(cfg) {
+      if (!cfg) return;
+      Object.assign(settings, cfg);
+      const s = settings;
+      const sz = SIZE[s.timerSize] || SIZE.xl;
+
+      bgOverlay.style.background = `rgba(0,0,0,${Math.max(0, Math.min(100, s.bgOverlayOpacity ?? 35)) / 100})`;
+
+      // 状態別タイマー色を更新
+      timerColors = {
+        stopped:  s.timerColorStopped  || '#ffffff',
+        running:  s.timerColorRunning  || '#3ecf8e',
+        paused:   s.timerColorPaused   || '#f5a623',
+        finished: s.timerColorFinished || '#e05252',
+      };
+
+      // Timer
+      timerWrap.classList.toggle('hidden', !s.timerVisible);
+      if (s.timerVisible) {
+        if (s.timerCustomPos) {
+          // ドラッグで設定されたカスタム位置
+          Object.assign(timerWrap.style, {
+            left: s.timerCustomPos.cx + '%', top: s.timerCustomPos.cy + '%',
+            right: 'auto', bottom: 'auto', transform: 'translate(-50%,-50%)', position: 'absolute',
+          });
+        } else {
+          applyPos(timerWrap, s.timerPosition);
+        }
+        timeEl.style.fontSize = sz.timer;
+      }
+
+    }
+
+    // ── Timer update ──
+    function updateTimer({ rem, total, state }) {
+      const m = Math.floor(rem / 60), s2 = rem % 60;
+      timeEl.textContent = `${String(m).padStart(2,'0')}:${String(s2).padStart(2,'0')}`;
+      const isFinished = rem === 0 && total > 0;
       const cls = state === 'running' ? 'running'
                 : state === 'paused'  ? 'paused'
-                : (rem === 0 && total > 0) ? 'finished' : '';
+                : isFinished          ? 'finished' : '';
       timeEl.className = cls;
+      // 状態に応じた色を適用
+      const colorKey = state === 'running' ? 'running'
+                     : state === 'paused'  ? 'paused'
+                     : isFinished          ? 'finished' : 'stopped';
+      timeEl.style.color = timerColors[colorKey];
       const pct = total > 0 ? (rem / total) * 100 : 100;
       progressEl.style.width = pct + '%';
-      progressEl.style.background = COLOR[state] || '#fff';
-      statusEl.textContent = STATUS[state] || '待機中';
     }
 
-    const videoOverlay  = document.getElementById('video-overlay');
-    const videoPlayer   = document.getElementById('video-player');
-    const playPrompt    = document.getElementById('play-prompt');
-    const btnFullscreen = document.getElementById('btn-fullscreen');
-    let _endTime = null;
+    // ── Background switching ──
+    let currentBgSlot = 'a';
+    function setBackground(url, transition = 'instant') {
+      const nextSlot = currentBgSlot === 'a' ? 'b' : 'a';
+      const nextEl = nextSlot === 'a' ? bgA : bgB;
+      const currEl = currentBgSlot === 'a' ? bgA : bgB;
+      currentBgSlot = nextSlot;
+      nextEl.style.backgroundImage = url ? `url("${url}")` : 'none';
+      if (transition === 'fade') {
+        nextEl.style.transition = '';
+        nextEl.style.opacity = '0';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          nextEl.style.transition = 'opacity 0.8s ease';
+          currEl.style.transition = 'opacity 0.8s ease';
+          nextEl.style.opacity = '1';
+          currEl.style.opacity = '0';
+        }));
+      } else {
+        nextEl.style.transition = '';
+        currEl.style.transition  = '';
+        nextEl.style.opacity = '1';
+        currEl.style.opacity = '0';
+      }
+    }
+
+    // ── Debug toast ──
+    const _dbgEl = document.getElementById('dbg-toast');
+    let _dbgTimer = null;
+    function dbg(msg) {
+      _dbgEl.textContent = msg;
+      _dbgEl.classList.add('show');
+      clearTimeout(_dbgTimer);
+      _dbgTimer = setTimeout(() => _dbgEl.classList.remove('show'), 4000);
+    }
+
+    // ── Scene image preload cache ──
+    const _preloaded = new Set();
+
+    // ── Blob URL pool (最大3件保持・古いものを解放) ──
+    const _imgBlobUrls = [];
+
+    // ── Fullscreen ──
+    function toggleFullscreen() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      } else {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    }
+
+    // ── Video ──
+    const videoOverlay = document.getElementById('video-overlay');
+    const videoPlayer  = document.getElementById('video-player');
+    const playPrompt   = document.getElementById('play-prompt');
     let _autoClose = false;
-    let _fsTimer = null;
-
-    function enterFullscreen() {
-      document.documentElement.requestFullscreen().catch(() => {});
-      btnFullscreen.classList.remove('show');
-      clearTimeout(_fsTimer);
-    }
-
-    function showFullscreenBtn() {
-      btnFullscreen.classList.add('show');
-      clearTimeout(_fsTimer);
-      _fsTimer = setTimeout(() => btnFullscreen.classList.remove('show'), 5000);
-    }
 
     function resumePlay() {
       playPrompt.classList.remove('show');
@@ -217,81 +352,249 @@
       videoPlayer.ontimeupdate = null;
       videoOverlay.classList.remove('active');
       playPrompt.classList.remove('show');
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     }
 
     function handleVideoEnd() {
       videoPlayer.onended = null;
       videoPlayer.ontimeupdate = null;
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       if (_autoClose) window.close();
       else closeVideo();
     }
 
-    function playVideo({ url, fullscreen, autoClose, startTime = 0, endTime = null, videoDevice = '' }) {
-      _autoClose = autoClose;
-      _endTime   = endTime;
+    function showOverlayText(text, index, total) {
+      const el = document.getElementById('text-overlay');
+      const inner   = document.getElementById('text-overlay-inner');
+      const counter = document.getElementById('text-overlay-counter');
+      if (!el || !inner) return;
+      inner.textContent = text;
+      if (counter) counter.textContent = total > 1 ? `${index+1} / ${total}` : '';
+      el.style.display = 'block';
+    }
 
-      videoPlayer.onended     = null;
-      videoPlayer.ontimeupdate = null;
+    function clearOverlayText() {
+      const el = document.getElementById('text-overlay');
+      if (el) el.style.display = 'none';
+    }
+
+    function _esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function showScoreTable(rows) {
+      const overlay   = document.getElementById('score-overlay');
+      const container = document.getElementById('score-table-container');
+      if (!overlay || !container) return;
+
+      let html = `<table style="width:100%;border-collapse:collapse;color:#fff;font-size:clamp(14px,2.2vw,22px)">
+        <thead><tr style="background:rgba(255,255,255,0.1)">
+          <th style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.2)">配役</th>
+          <th style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.2)">項目</th>
+          <th style="padding:12px 14px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.2)">得点</th>
+          <th style="padding:12px 14px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.2)">成否</th>
+          <th style="padding:12px 14px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.2)">獲得</th>
+        </tr></thead><tbody>`;
+
+      rows.forEach(({charName, items, total}) => {
+        const gBorder = '2px solid rgba(255,255,255,0.25)';
+        items.forEach((it, idx) => {
+          const rowBg     = idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
+          const cellBdr   = 'border-bottom:1px solid rgba(255,255,255,0.07)';
+          html += `<tr style="background:${rowBg}">`;
+          if (idx === 0) {
+            html += `<td rowspan="${items.length + 1}" style="padding:10px 16px;vertical-align:middle;text-align:center;font-weight:600;border-right:1px solid rgba(255,255,255,0.1);border-bottom:${gBorder}">${_esc(charName)}</td>`;
+          }
+          html += `<td style="padding:9px 14px;${cellBdr}">${_esc(it.name)}</td>`;
+          const isCount = it.scoreType === 'count';
+          const ptLabel = isCount ? `${it.points}×` : String(it.points);
+          html += `<td style="padding:9px 14px;text-align:right;${cellBdr}">${ptLabel}</td>`;
+          let mark, acqColor;
+          if (isCount) {
+            mark     = `<span style="color:#f5a623;font-size:0.9em">${it.count}件</span>`;
+            acqColor = it.count > 0 ? '#fff' : 'rgba(255,255,255,0.35)';
+          } else {
+            mark     = it.achieved
+              ? '<span style="color:#3ecf8e">○</span>'
+              : '<span style="color:rgba(255,255,255,0.25)">✕</span>';
+            acqColor = it.achieved ? '#fff' : 'rgba(255,255,255,0.25)';
+          }
+          html += `<td style="padding:9px 14px;text-align:center;${cellBdr}">${mark}</td>`;
+          html += `<td style="padding:9px 14px;text-align:right;${cellBdr};color:${acqColor}">${it.acquired}</td>`;
+          html += '</tr>';
+        });
+        // Total row — 配役 column is covered by rowspan, so 4 cells only
+        html += `<tr style="background:rgba(255,255,255,0.07)">
+          <td colspan="3" style="padding:9px 14px;text-align:right;font-size:0.85em;color:rgba(255,255,255,0.55);border-bottom:${gBorder}">合計</td>
+          <td style="padding:9px 14px;text-align:right;font-weight:700;font-size:1.1em;border-bottom:${gBorder}">${total}</td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+      overlay.style.display = 'block';
+    }
+
+    function hideScoreTable() {
+      const el = document.getElementById('score-overlay');
+      if (el) el.style.display = 'none';
+    }
+
+    function playVideo({ url, autoClose = false, loop = false, startTime = 0, endTime = null }) {
+      _autoClose = autoClose;
+      videoPlayer.loop = loop;
       videoPlayer.src = url;
-      if (videoDevice && videoPlayer.setSinkId) {
-        videoPlayer.setSinkId(videoDevice).catch(() => {});
-      }
       videoOverlay.classList.add('active');
       playPrompt.classList.remove('show');
-
       videoPlayer.onloadedmetadata = () => {
         if (startTime > 0) videoPlayer.currentTime = startTime;
       };
-
       if (endTime != null) {
         videoPlayer.ontimeupdate = () => {
           if (videoPlayer.currentTime >= endTime) handleVideoEnd();
         };
       }
       videoPlayer.onended = handleVideoEnd;
-
-      videoPlayer.play().catch(() => {
-        playPrompt.classList.add('show');
-      });
-      if (fullscreen) showFullscreenBtn();
+      videoPlayer.play().catch(() => { playPrompt.classList.add('show'); });
     }
 
-    // URLパラメータから動画情報を読んで即再生（新規ウィンドウ起動時）
+    // ── Drag: タイマーを自由にドラッグ移動 ──
+    (function initDrag() {
+      const el = timerWrap;
+      let dragging = false, ox = 0, oy = 0;
+
+      function dragStart(cx, cy) {
+        dragging = true;
+        const r = el.getBoundingClientRect();
+        ox = cx - (r.left + r.width / 2);
+        oy = cy - (r.top  + r.height / 2);
+        el.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+      }
+      function dragMove(cx, cy) {
+        if (!dragging) return;
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const nx = Math.max(2, Math.min(98, (cx - ox) / vw * 100));
+        const ny = Math.max(2, Math.min(98, (cy - oy) / vh * 100));
+        Object.assign(el.style, { left: nx + '%', top: ny + '%', right: 'auto', bottom: 'auto', transform: 'translate(-50%,-50%)' });
+      }
+      function dragEnd() {
+        if (!dragging) return;
+        dragging = false;
+        el.style.cursor = 'grab';
+        document.body.style.userSelect = '';
+        if (window._gmBc) window._gmBc.postMessage({
+          type: 'position-update', target: 'timer',
+          cx: parseFloat(el.style.left), cy: parseFloat(el.style.top),
+        });
+      }
+
+      el.style.cursor = 'grab';
+      el.addEventListener('mousedown',  (e) => { if (e.button === 0) { dragStart(e.clientX, e.clientY); e.preventDefault(); } });
+      document.addEventListener('mousemove',  (e) => dragMove(e.clientX, e.clientY));
+      document.addEventListener('mouseup',    ()  => dragEnd());
+      el.addEventListener('touchstart', (e) => { dragStart(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+      document.addEventListener('touchmove',  (e) => { if (dragging) { dragMove(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+      document.addEventListener('touchend',   ()  => dragEnd());
+    })();
+
+    // ── BroadcastChannel ──
+    try {
+      const bc = new BroadcastChannel('gm-timer');
+      window._gmBc = bc;
+      bc.onmessage = ({ data }) => {
+        if (!data) return;
+        switch (data.type) {
+          case 'update':
+            updateTimer(data);
+            if (data.settings) applySettings(data.settings);
+            if ('bgUrl' in data) setBackground(data.bgUrl);
+            break;
+          case 'scene-image': {
+            dbg('[URL直接] ' + (data.url||'').slice(0,60));
+            setBackground(data.url, data.transition || 'instant');
+            const _chk = new Image();
+            _chk.onload = () => dbg('[URL] 読込OK ' + _chk.naturalWidth + 'x' + _chk.naturalHeight);
+            _chk.onerror = () => dbg('[URL] 読込NG ← 認証/CORS障壁の可能性');
+            _chk.src = data.url;
+            break;
+          }
+          case 'scene-image-data': {
+            dbg('[バイナリ受信] ' + Math.round(data.buffer.byteLength/1024) + 'KB / ' + (data.mime||'?'));
+            const _blob = new Blob([data.buffer], { type: data.mime || 'image/jpeg' });
+            const _blobUrl = URL.createObjectURL(_blob);
+            // デコード完了を待ってから表示（黒画面・上からロードを防止）
+            const _decImg = new Image();
+            _decImg.src = _blobUrl;
+            const _tr = data.transition || 'instant';
+            _decImg.decode()
+              .catch(() => {}) // デコード失敗でも表示は試みる
+              .then(() => {
+                _imgBlobUrls.push(_blobUrl);
+                if (_imgBlobUrls.length > 3) URL.revokeObjectURL(_imgBlobUrls.shift());
+                setBackground(_blobUrl, _tr);
+              });
+            break;
+          }
+          case 'scene-video':
+            playVideo(data);
+            break;
+          case 'update-settings':
+            applySettings(data.settings);
+            break;
+          case 'overlay-text':
+            showOverlayText(data.text, data.index, data.total);
+            break;
+          case 'overlay-clear':
+            clearOverlayText();
+            break;
+          case 'preload-images':
+            (data.urls || []).forEach(url => {
+              if (!_preloaded.has(url)) {
+                _preloaded.add(url);
+                const img = new Image();
+                img.src = url;
+              }
+            });
+            break;
+          case 'score-table':
+            if (data.visible) showScoreTable(data.rows || []);
+            else hideScoreTable();
+            break;
+        }
+      };
+    } catch(e) {}
+
+    // ── postMessage (legacy + incoming video) ──
+    window.addEventListener('message', e => {
+      const d = e.data;
+      if (!d) return;
+      if (d.type === 'play-video') {
+        playVideo({ url: d.url, autoClose: d.autoClose, startTime: d.startTime || 0, endTime: d.endTime ?? null });
+        if (d.fullscreen) document.documentElement.requestFullscreen().catch(() => {});
+      }
+    });
+
+    // ── URL params (video on open) ──
     (function() {
       const p = new URLSearchParams(window.location.search);
       if (p.get('v') === '1' && p.get('fid') && p.get('key')) {
         const fullscreen = p.get('fs') === '1';
         if (fullscreen) {
-          // このウィンドウが表示されているディスプレイ上で最大化
           window.moveTo(screen.availLeft ?? 0, screen.availTop ?? 0);
           window.resizeTo(screen.availWidth, screen.availHeight);
         }
         const url = `https://www.googleapis.com/drive/v3/files/${p.get('fid')}?alt=media&key=${encodeURIComponent(p.get('key'))}`;
         playVideo({
           url,
-          fullscreen,
-          autoClose:   p.get('ac') === '1',
-          startTime:   parseFloat(p.get('st')) || 0,
-          endTime:     p.get('et') ? parseFloat(p.get('et')) : null,
-          videoDevice: p.get('vd') || ''
+          autoClose:  p.get('ac') === '1',
+          startTime:  parseFloat(p.get('st')) || 0,
+          endTime:    p.get('et') ? parseFloat(p.get('et')) : null,
         });
+        if (fullscreen) document.documentElement.requestFullscreen().catch(() => {});
       }
     })();
 
-    // window.postMessage（メイン画面から直接送られる動画再生指示）
-    window.addEventListener('message', e => {
-      if (e.data?.type === 'play-video') playVideo(e.data);
-    });
-
-    // BroadcastChannel（タイマー更新）
-    try {
-      const bc = new BroadcastChannel('gm-timer');
-      bc.onmessage = e => {
-        if (e.data?.type === 'update') update(e.data);
-      };
-    } catch(e) {}
+    // ── Init ──
+    applySettings(settings);
   </script>
 </body>
 </html>
