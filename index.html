@@ -1951,15 +1951,11 @@ function renderCharacterSettings() {
   chars.forEach((name, i) => {
     const meta = charMeta(name);
     const isNpc = meta.type === 'npc';
-    const color = meta.color || '';
     const el = document.createElement('div');
     el.className = 'sfx-tag';
-    el.style.cssText = `cursor:default;${color ? `border-left:3px solid ${color};` : ''}`;
+    el.style.cssText = 'cursor:default';
     el.innerHTML = `
       <span class="drag-handle" draggable="true" style="cursor:grab">⠿</span>
-      <input type="color" value="${color||'#888888'}" title="色を設定"
-        style="width:22px;height:22px;padding:1px;border-radius:4px;border:1px solid var(--border);cursor:pointer;flex-shrink:0"
-        onchange="charSetColor(${i},this.value)">
       <span style="flex:1;font-size:13px">${escHtml(name)}</span>
       <button class="btn-ghost" title="${isNpc?'NPCとして登録（クリックでPCに変更）':'PCとして登録（クリックでNPCに変更）'}"
         style="padding:2px 7px;font-size:10px;flex-shrink:0;${isNpc?'color:var(--text-dim)':''}"
@@ -2000,14 +1996,6 @@ function charToggleType(idx) {
   save(); renderCharacterSettings();
 }
 
-function charSetColor(idx, color) {
-  const name = (S.scenario.characters || [])[idx]; if (!name) return;
-  charMeta(name).color = color;
-  save();
-  // ボーダー色だけ即時反映
-  const tags = qsa('#char-list .sfx-tag');
-  if (tags[idx]) tags[idx].style.borderLeft = `3px solid ${color}`;
-}
 
 function addCharacter() {
   const inp = qs('#in-char-name');
@@ -2160,11 +2148,9 @@ function renderScoringMissions() {
   let html = '';
   pcChars.forEach(charName => {
     const charMs = missions.filter(m => m.charName === charName);
-    const meta   = charMeta(charName);
-    const accentStyle = meta.color ? `border-left:3px solid ${meta.color};` : '';
     html += `
       <div style="margin-bottom:14px">
-        <div style="font-size:13px;font-weight:600;padding:6px 10px;background:var(--bg-2);border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0;${accentStyle}">
+        <div style="font-size:13px;font-weight:600;padding:6px 10px;background:var(--bg-2);border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0">
           ${escHtml(charName)}
           <span style="font-size:11px;font-weight:400;color:var(--text-dim);margin-left:6px">${charMs.length}件</span>
         </div>
