@@ -4243,6 +4243,44 @@ function renderTableEditor(body, sec) {
     </div>`;
   }
 
+  const rules = sec.autoFillRules || [];
+  const colOpts = (selId) => cols.map(c =>
+    `<option value="${c.id}"${selId===c.id?' selected':''}>${escHtml(c.name||'（列名なし）')}</option>`
+  ).join('');
+
+  const rulesHtml = rules.map(rule => {
+    const mappingsHtml = (rule.mappings || []).map((m, mi) =>
+      `<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        <input type="text" class="form-control-sm" value="${escHtml(m.value||'')}" placeholder="入力値…" style="flex:1" onchange="autoFillUpdateMapping('${sec.id}','${rule.id}',${mi},'value',this.value)">
+        <span style="font-size:12px;color:var(--text-dim);flex-shrink:0">→</span>
+        <input type="text" class="form-control-sm" value="${escHtml(m.fillValue||'')}" placeholder="自動入力値…" style="flex:1" onchange="autoFillUpdateMapping('${sec.id}','${rule.id}',${mi},'fillValue',this.value)">
+        <button class="btn-ghost" onclick="autoFillRemoveMapping('${sec.id}','${rule.id}',${mi})" style="padding:2px 6px;font-size:11px">✕</button>
+      </div>`
+    ).join('');
+    return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:12px;flex-shrink:0">トリガー列:</span>
+        <select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRule('${sec.id}','${rule.id}','triggerColId',this.value)">
+          <option value="">選択…</option>${colOpts(rule.triggerColId||'')}
+        </select>
+        <span style="font-size:12px;flex-shrink:0">→ 対象列:</span>
+        <select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRule('${sec.id}','${rule.id}','targetColId',this.value)">
+          <option value="">選択…</option>${colOpts(rule.targetColId||'')}
+        </select>
+        <button class="btn-ghost" onclick="autoFillRemoveRule('${sec.id}','${rule.id}')" style="padding:2px 6px;font-size:11px;color:var(--red);flex-shrink:0">ルール削除</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">入力値 → 自動入力値</div>
+      ${mappingsHtml || '<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">マッピングが登録されていません</div>'}
+      <button class="btn-ghost" onclick="autoFillAddMapping('${sec.id}','${rule.id}')" style="font-size:11px">＋ マッピングを追加</button>
+    </div>`;
+  }).join('');
+
+  const autoFillSection = cols.length === 0 ? '' : `
+    <div class="rec-header-row" style="margin-top:16px">自動入力ルール</div>
+    <div style="font-size:11px;color:var(--text-dim);margin:4px 0 8px">列の値が変わったとき、別の列を自動で埋めます</div>
+    ${rulesHtml || '<div class="empty" style="font-size:12px;margin-bottom:6px">ルールが登録されていません</div>'}
+    <button class="btn-ghost" onclick="autoFillAddRule('${sec.id}')" style="font-size:12px">＋ ルールを追加</button>`;
+
   body.innerHTML = `
     <div class="rec-header-row">列定義</div>
     <div style="margin-bottom:14px">
@@ -4252,7 +4290,44 @@ function renderTableEditor(body, sec) {
     <div class="rec-header-row">行データ</div>
     <div style="font-size:11px;color:var(--text-dim);margin:4px 0 8px">🔒 でロックした項目は本番中に変更できません</div>
     ${cols.length === 0 ? '<div class="empty" style="font-size:12px">先に列を定義してください</div>' : rowTableHtml}
-    <button class="btn-ghost" onclick="secAddTableRow()" style="font-size:12px;margin-top:4px"${cols.length===0?' disabled':''}>＋ 行を追加</button>`;
+    <button class="btn-ghost" onclick="secAddTableRow()" style="font-size:12px;margin-top:4px"${cols.length===0?' disabled':''}>＋ 行を追加</button>
+    ${autoFillSection}`;
+}
+
+function autoFillAddRule(secId) {
+  const sec = getSection(secId); if (!sec) return;
+  if (!sec.autoFillRules) sec.autoFillRules = [];
+  sec.autoFillRules.push({ id: 'afr-' + Date.now(), triggerColId: '', targetColId: '', mappings: [] });
+  save(); renderSectionEditor();
+}
+function autoFillRemoveRule(secId, ruleId) {
+  const sec = getSection(secId); if (!sec) return;
+  sec.autoFillRules = (sec.autoFillRules || []).filter(r => r.id !== ruleId);
+  save(); renderSectionEditor();
+}
+function autoFillUpdateRule(secId, ruleId, field, value) {
+  const sec = getSection(secId); if (!sec) return;
+  const rule = (sec.autoFillRules || []).find(r => r.id === ruleId); if (!rule) return;
+  rule[field] = value; save();
+}
+function autoFillAddMapping(secId, ruleId) {
+  const sec = getSection(secId); if (!sec) return;
+  const rule = (sec.autoFillRules || []).find(r => r.id === ruleId); if (!rule) return;
+  if (!rule.mappings) rule.mappings = [];
+  rule.mappings.push({ value: '', fillValue: '' });
+  save(); renderSectionEditor();
+}
+function autoFillRemoveMapping(secId, ruleId, idx) {
+  const sec = getSection(secId); if (!sec) return;
+  const rule = (sec.autoFillRules || []).find(r => r.id === ruleId); if (!rule) return;
+  rule.mappings.splice(idx, 1);
+  save(); renderSectionEditor();
+}
+function autoFillUpdateMapping(secId, ruleId, idx, field, value) {
+  const sec = getSection(secId); if (!sec) return;
+  const rule = (sec.autoFillRules || []).find(r => r.id === ruleId); if (!rule) return;
+  if (!rule.mappings[idx]) return;
+  rule.mappings[idx][field] = value; save();
 }
 
 function secAddTableCol() {
@@ -4494,6 +4569,21 @@ function recordSetValue(secId, rowId, colId, value) {
     S.scenario.gameRecord[secId][rowId][colId] = value;
   } else {
     S.scenario.gameRecord[secId][rowId] = value;
+  }
+  // 自動入力ルールを適用
+  if (colId) {
+    const sec = getSection(secId);
+    const triggered = (sec?.autoFillRules || []).filter(r => r.triggerColId === colId && r.targetColId);
+    let filled = false;
+    triggered.forEach(rule => {
+      const mapping = (rule.mappings || []).find(m => m.value === String(value));
+      if (mapping) {
+        if (!S.scenario.gameRecord[secId][rowId]) S.scenario.gameRecord[secId][rowId] = {};
+        S.scenario.gameRecord[secId][rowId][rule.targetColId] = mapping.fillValue;
+        filled = true;
+      }
+    });
+    if (filled) { save(); renderRecordPanel(); return; }
   }
   save();
 }
