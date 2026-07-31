@@ -3822,6 +3822,7 @@ function jRuleSetResult(secId, ruleId, value) {
 // Record Sections
 // ═══════════════════════════════════════════════════════
 let S_editingSectionId = null;
+let S_rowRulesId  = null;
 let S_dragCtx    = null; // { type:'section'|'formrow'|'tablerow', fromId, secId }
 let S_colResize  = null; // { secId, colId, startX, startW, th }
 
@@ -3960,6 +3961,7 @@ function deleteRecordSection(id) {
 
 function openSectionEditor(id) {
   S_editingSectionId = id;
+  S_rowRulesId = null;
   const sec = getSection(id);
   if (!sec) return;
   const nameInput = qs('#sec-name');
@@ -4001,6 +4003,11 @@ function renderSectionEditor() {
   if (!body) return;
   const sec = getSection(S_editingSectionId);
   if (!sec) { body.innerHTML = ''; return; }
+  if (S_rowRulesId && sec.style === 'table') {
+    const row = (sec.rows || []).find(r => r.id === S_rowRulesId);
+    if (row) { renderRowRulesEditor(body, sec, row); return; }
+    S_rowRulesId = null;
+  }
   if (sec.style === 'table') renderTableEditor(body, sec);
   else renderFormEditor(body, sec);
 }
@@ -4229,7 +4236,8 @@ function renderTableEditor(body, sec) {
           <span class="drag-handle" style="display:block;text-align:center">${ri+1}</span>
         </td>
         ${cells}
-        <td style="padding:4px;vertical-align:middle">
+        <td style="padding:4px;vertical-align:middle;white-space:nowrap">
+          <button class="btn-ghost" onclick="openRowRules('${row.id}')" style="padding:2px 5px;font-size:11px" title="自動入力ルール">⚡${(row.autoFillRules?.length||0)?`<span style="font-size:9px;color:var(--accent);margin-left:1px">${row.autoFillRules.length}</span>`:''}</button>
           <button class="btn-ghost" onclick="secRemoveTableRow('${row.id}')" style="padding:2px 6px;font-size:11px">✕</button>
         </td>
       </tr>`;
@@ -4243,44 +4251,6 @@ function renderTableEditor(body, sec) {
     </div>`;
   }
 
-  const rules = sec.autoFillRules || [];
-  const colOpts = (selId) => cols.map(c =>
-    `<option value="${c.id}"${selId===c.id?' selected':''}>${escHtml(c.name||'（列名なし）')}</option>`
-  ).join('');
-
-  const rulesHtml = rules.map(rule => {
-    const mappingsHtml = (rule.mappings || []).map((m, mi) =>
-      `<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
-        <input type="text" class="form-control-sm" value="${escHtml(m.value||'')}" placeholder="入力値…" style="flex:1" onchange="autoFillUpdateMapping('${sec.id}','${rule.id}',${mi},'value',this.value)">
-        <span style="font-size:12px;color:var(--text-dim);flex-shrink:0">→</span>
-        <input type="text" class="form-control-sm" value="${escHtml(m.fillValue||'')}" placeholder="自動入力値…" style="flex:1" onchange="autoFillUpdateMapping('${sec.id}','${rule.id}',${mi},'fillValue',this.value)">
-        <button class="btn-ghost" onclick="autoFillRemoveMapping('${sec.id}','${rule.id}',${mi})" style="padding:2px 6px;font-size:11px">✕</button>
-      </div>`
-    ).join('');
-    return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px">
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-        <span style="font-size:12px;flex-shrink:0">トリガー列:</span>
-        <select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRule('${sec.id}','${rule.id}','triggerColId',this.value)">
-          <option value="">選択…</option>${colOpts(rule.triggerColId||'')}
-        </select>
-        <span style="font-size:12px;flex-shrink:0">→ 対象列:</span>
-        <select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRule('${sec.id}','${rule.id}','targetColId',this.value)">
-          <option value="">選択…</option>${colOpts(rule.targetColId||'')}
-        </select>
-        <button class="btn-ghost" onclick="autoFillRemoveRule('${sec.id}','${rule.id}')" style="padding:2px 6px;font-size:11px;color:var(--red);flex-shrink:0">ルール削除</button>
-      </div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">入力値 → 自動入力値</div>
-      ${mappingsHtml || '<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">マッピングが登録されていません</div>'}
-      <button class="btn-ghost" onclick="autoFillAddMapping('${sec.id}','${rule.id}')" style="font-size:11px">＋ マッピングを追加</button>
-    </div>`;
-  }).join('');
-
-  const autoFillSection = cols.length === 0 ? '' : `
-    <div class="rec-header-row" style="margin-top:16px">自動入力ルール</div>
-    <div style="font-size:11px;color:var(--text-dim);margin:4px 0 8px">列の値が変わったとき、別の列を自動で埋めます</div>
-    ${rulesHtml || '<div class="empty" style="font-size:12px;margin-bottom:6px">ルールが登録されていません</div>'}
-    <button class="btn-ghost" onclick="autoFillAddRule('${sec.id}')" style="font-size:12px">＋ ルールを追加</button>`;
-
   body.innerHTML = `
     <div class="rec-header-row">列定義</div>
     <div style="margin-bottom:14px">
@@ -4288,44 +4258,118 @@ function renderTableEditor(body, sec) {
       <button class="btn-ghost" onclick="secAddTableCol()" style="font-size:12px;margin-top:8px;width:100%">＋ 列を追加</button>
     </div>
     <div class="rec-header-row">行データ</div>
-    <div style="font-size:11px;color:var(--text-dim);margin:4px 0 8px">🔒 でロックした項目は本番中に変更できません</div>
+    <div style="font-size:11px;color:var(--text-dim);margin:4px 0 8px">🔒 でロックした項目は本番中に変更できません　⚡ で行ごとの自動入力ルールを設定</div>
     ${cols.length === 0 ? '<div class="empty" style="font-size:12px">先に列を定義してください</div>' : rowTableHtml}
-    <button class="btn-ghost" onclick="secAddTableRow()" style="font-size:12px;margin-top:4px"${cols.length===0?' disabled':''}>＋ 行を追加</button>
-    ${autoFillSection}`;
+    <button class="btn-ghost" onclick="secAddTableRow()" style="font-size:12px;margin-top:4px"${cols.length===0?' disabled':''}>＋ 行を追加</button>`;
 }
 
-function autoFillAddRule(secId) {
+function openRowRules(rowId) { S_rowRulesId = rowId; renderSectionEditor(); }
+function closeRowRules() { S_rowRulesId = null; renderSectionEditor(); }
+
+function renderRowRulesEditor(body, sec, row) {
+  const cols = sec.columns || [];
+  const rules = row.autoFillRules || [];
+  const rowIdx = (sec.rows || []).findIndex(r => r.id === row.id);
+  const rowLabel = (() => {
+    for (const col of cols) {
+      const v = row.cells?.[col.id];
+      if (v != null && v !== '') return `${escHtml(col.name||'')}: ${escHtml(String(v))}`;
+    }
+    return `行 ${rowIdx + 1}`;
+  })();
+  const colOpts = (selId) => cols.map(c =>
+    `<option value="${c.id}"${selId===c.id?' selected':''}>${escHtml(c.name||'（列名なし）')}</option>`
+  ).join('');
+  const triggerInput = (rule, m, mi) => {
+    const col = cols.find(c => c.id === rule.triggerColId);
+    const fn = `autoFillUpdateMappingRow('${sec.id}','${row.id}','${rule.id}',${mi},'value',this.value)`;
+    if (col?.type === 'select') {
+      const opts = (row.cellOptions?.[col.id] || col.options || '').split(',').map(o=>o.trim()).filter(Boolean);
+      const optHtml = opts.map(o=>`<option value="${escHtml(o)}"${m.value===o?' selected':''}>${escHtml(o)}</option>`).join('');
+      return `<select class="form-control-sm" style="flex:1" onchange="${fn}"><option value="">選択…</option>${optHtml}</select>`;
+    }
+    if (col?.type === 'character') {
+      const charOpts = (S.scenario.characters||[]).map(c=>`<option value="${escHtml(c)}"${m.value===c?' selected':''}>${escHtml(c)}</option>`).join('');
+      return `<select class="form-control-sm" style="flex:1" onchange="${fn}"><option value="">選択…</option>${charOpts}</select>`;
+    }
+    if (col?.type === 'toggle') {
+      const tl = escHtml(col.trueLabel||'はい'), fl = escHtml(col.falseLabel||'いいえ');
+      return `<select class="form-control-sm" style="flex:1" onchange="${fn}"><option value="">選択…</option><option value="true"${m.value==='true'?' selected':''}>${tl}</option><option value="false"${m.value==='false'?' selected':''}>${fl}</option></select>`;
+    }
+    return `<input type="text" class="form-control-sm" value="${escHtml(m.value||'')}" placeholder="入力値…" style="flex:1" onchange="${fn}">`;
+  };
+  const rulesHtml = rules.map(rule => {
+    const mappingsHtml = (rule.mappings||[]).map((m,mi) => `
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        ${triggerInput(rule,m,mi)}
+        <span style="font-size:12px;color:var(--text-dim);flex-shrink:0">→</span>
+        <input type="text" class="form-control-sm" value="${escHtml(m.fillValue||'')}" placeholder="自動入力値…" style="flex:1" onchange="autoFillUpdateMappingRow('${sec.id}','${row.id}','${rule.id}',${mi},'fillValue',this.value)">
+        <button class="btn-ghost" onclick="autoFillRemoveMappingRow('${sec.id}','${row.id}','${rule.id}',${mi})" style="padding:2px 6px;font-size:11px">✕</button>
+      </div>`).join('');
+    return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:12px;flex-shrink:0">トリガー列:</span>
+        <select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRuleRow('${sec.id}','${row.id}','${rule.id}','triggerColId',this.value)">
+          <option value="">選択…</option>${colOpts(rule.triggerColId||'')}
+        </select>
+        <span style="font-size:12px;flex-shrink:0">→ 対象列:</span>
+        <select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRuleRow('${sec.id}','${row.id}','${rule.id}','targetColId',this.value)">
+          <option value="">選択…</option>${colOpts(rule.targetColId||'')}
+        </select>
+        <button class="btn-ghost" onclick="autoFillRemoveRuleRow('${sec.id}','${row.id}','${rule.id}')" style="padding:2px 6px;font-size:11px;color:var(--red);flex-shrink:0">ルール削除</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">入力値 → 自動入力値</div>
+      ${mappingsHtml||'<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">マッピングが登録されていません</div>'}
+      <button class="btn-ghost" onclick="autoFillAddMappingRow('${sec.id}','${row.id}','${rule.id}')" style="font-size:11px">＋ マッピングを追加</button>
+    </div>`;
+  }).join('');
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <button class="btn-ghost" onclick="closeRowRules()" style="font-size:12px">← 戻る</button>
+      <div style="font-size:13px;font-weight:600">${rowLabel} の自動入力ルール</div>
+    </div>
+    ${rulesHtml||'<div class="empty" style="font-size:12px;margin-bottom:8px">ルールが登録されていません</div>'}
+    <button class="btn-ghost" onclick="autoFillAddRuleRow('${sec.id}','${row.id}')" style="font-size:12px">＋ ルールを追加</button>`;
+}
+
+function autoFillAddRuleRow(secId, rowId) {
   const sec = getSection(secId); if (!sec) return;
-  if (!sec.autoFillRules) sec.autoFillRules = [];
-  sec.autoFillRules.push({ id: 'afr-' + Date.now(), triggerColId: '', targetColId: '', mappings: [] });
+  const row = (sec.rows||[]).find(r=>r.id===rowId); if (!row) return;
+  if (!row.autoFillRules) row.autoFillRules = [];
+  row.autoFillRules.push({ id:'afr-'+Date.now(), triggerColId:'', targetColId:'', mappings:[] });
   save(); renderSectionEditor();
 }
-function autoFillRemoveRule(secId, ruleId) {
+function autoFillRemoveRuleRow(secId, rowId, ruleId) {
   const sec = getSection(secId); if (!sec) return;
-  sec.autoFillRules = (sec.autoFillRules || []).filter(r => r.id !== ruleId);
+  const row = (sec.rows||[]).find(r=>r.id===rowId); if (!row) return;
+  row.autoFillRules = (row.autoFillRules||[]).filter(r=>r.id!==ruleId);
   save(); renderSectionEditor();
 }
-function autoFillUpdateRule(secId, ruleId, field, value) {
+function autoFillUpdateRuleRow(secId, rowId, ruleId, field, value) {
   const sec = getSection(secId); if (!sec) return;
-  const rule = (sec.autoFillRules || []).find(r => r.id === ruleId); if (!rule) return;
-  rule[field] = value; save();
+  const row = (sec.rows||[]).find(r=>r.id===rowId); if (!row) return;
+  const rule = (row.autoFillRules||[]).find(r=>r.id===ruleId); if (!rule) return;
+  rule[field] = value; save(); renderSectionEditor();
 }
-function autoFillAddMapping(secId, ruleId) {
+function autoFillAddMappingRow(secId, rowId, ruleId) {
   const sec = getSection(secId); if (!sec) return;
-  const rule = (sec.autoFillRules || []).find(r => r.id === ruleId); if (!rule) return;
+  const row = (sec.rows||[]).find(r=>r.id===rowId); if (!row) return;
+  const rule = (row.autoFillRules||[]).find(r=>r.id===ruleId); if (!rule) return;
   if (!rule.mappings) rule.mappings = [];
-  rule.mappings.push({ value: '', fillValue: '' });
+  rule.mappings.push({ value:'', fillValue:'' });
   save(); renderSectionEditor();
 }
-function autoFillRemoveMapping(secId, ruleId, idx) {
+function autoFillRemoveMappingRow(secId, rowId, ruleId, idx) {
   const sec = getSection(secId); if (!sec) return;
-  const rule = (sec.autoFillRules || []).find(r => r.id === ruleId); if (!rule) return;
-  rule.mappings.splice(idx, 1);
+  const row = (sec.rows||[]).find(r=>r.id===rowId); if (!row) return;
+  const rule = (row.autoFillRules||[]).find(r=>r.id===ruleId); if (!rule) return;
+  rule.mappings.splice(idx,1);
   save(); renderSectionEditor();
 }
-function autoFillUpdateMapping(secId, ruleId, idx, field, value) {
+function autoFillUpdateMappingRow(secId, rowId, ruleId, idx, field, value) {
   const sec = getSection(secId); if (!sec) return;
-  const rule = (sec.autoFillRules || []).find(r => r.id === ruleId); if (!rule) return;
+  const row = (sec.rows||[]).find(r=>r.id===rowId); if (!row) return;
+  const rule = (row.autoFillRules||[]).find(r=>r.id===ruleId); if (!rule) return;
   if (!rule.mappings[idx]) return;
   rule.mappings[idx][field] = value; save();
 }
@@ -4570,13 +4614,14 @@ function recordSetValue(secId, rowId, colId, value) {
   } else {
     S.scenario.gameRecord[secId][rowId] = value;
   }
-  // 自動入力ルールを適用
+  // 自動入力ルールを適用（行ごと）
   if (colId) {
     const sec = getSection(secId);
-    const triggered = (sec?.autoFillRules || []).filter(r => r.triggerColId === colId && r.targetColId);
+    const row = (sec?.rows||[]).find(r=>r.id===rowId);
+    const triggered = (row?.autoFillRules||[]).filter(r=>r.triggerColId===colId && r.targetColId);
     let filled = false;
     triggered.forEach(rule => {
-      const mapping = (rule.mappings || []).find(m => m.value === String(value));
+      const mapping = (rule.mappings||[]).find(m=>m.value===String(value));
       if (mapping) {
         if (!S.scenario.gameRecord[secId][rowId]) S.scenario.gameRecord[secId][rowId] = {};
         S.scenario.gameRecord[secId][rowId][rule.targetColId] = mapping.fillValue;
