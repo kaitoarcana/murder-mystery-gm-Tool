@@ -4545,7 +4545,9 @@ function renderTableSection(sec) {
       const locked = !!(row.lockedCells?.[col.id]);
       const preset = row.cells?.[col.id] ?? null;
       if (locked) {
-        return `<td><span class="rec-fixed">${escHtml(formatLockedValue(preset, col))}</span></td>`;
+        const liveVal = S.scenario.gameRecord?.[sec.id]?.[row.id]?.[col.id];
+        const displayVal = (liveVal !== undefined && liveVal !== null) ? liveVal : preset;
+        return `<td><span class="rec-fixed">${escHtml(formatLockedValue(displayVal, col))}</span></td>`;
       }
       const cellOpts = row.cellOptions?.[col.id] || col.options || '';
       const effectiveDefObj = { ...col, options: cellOpts };
