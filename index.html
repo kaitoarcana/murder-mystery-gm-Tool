@@ -1933,6 +1933,12 @@ function escHtml(s) {
 // ═══════════════════════════════════════════════════════
 // Characters
 // ═══════════════════════════════════════════════════════
+function charMeta(name) {
+  if (!S.scenario.characterMeta) S.scenario.characterMeta = {};
+  if (!S.scenario.characterMeta[name]) S.scenario.characterMeta[name] = { type: 'pc', color: '' };
+  return S.scenario.characterMeta[name];
+}
+
 function renderCharacterSettings() {
   const list = qs('#char-list');
   if (!list) return;
@@ -1943,12 +1949,21 @@ function renderCharacterSettings() {
   }
   list.innerHTML = '';
   chars.forEach((name, i) => {
+    const meta = charMeta(name);
+    const isNpc = meta.type === 'npc';
+    const color = meta.color || '';
     const el = document.createElement('div');
     el.className = 'sfx-tag';
-    el.style.cssText = 'cursor:default';
+    el.style.cssText = `cursor:default;${color ? `border-left:3px solid ${color};` : ''}`;
     el.innerHTML = `
       <span class="drag-handle" draggable="true" style="cursor:grab">⠿</span>
+      <input type="color" value="${color||'#888888'}" title="色を設定"
+        style="width:22px;height:22px;padding:1px;border-radius:4px;border:1px solid var(--border);cursor:pointer;flex-shrink:0"
+        onchange="charSetColor(${i},this.value)">
       <span style="flex:1;font-size:13px">${escHtml(name)}</span>
+      <button class="btn-ghost" title="${isNpc?'NPCとして登録（クリックでPCに変更）':'PCとして登録（クリックでNPCに変更）'}"
+        style="padding:2px 7px;font-size:10px;flex-shrink:0;${isNpc?'color:var(--text-dim)':''}"
+        onclick="charToggleType(${i})">${isNpc?'NPC':'PC'}</button>
       <button class="btn-ghost" style="padding:2px 8px;font-size:11px">✕</button>
     `;
     el.querySelector('.drag-handle').ondragstart = (e) => { e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('char-idx', i); setTimeout(()=>el.classList.add('dragging'),0); };
@@ -1973,9 +1988,25 @@ function renderCharacterSettings() {
       arr.splice(Math.max(0, to), 0, item);
       save(); renderCharacterSettings();
     };
-    el.querySelector('button').onclick = () => removeCharacter(i);
+    el.querySelectorAll('button')[1].onclick = () => removeCharacter(i);
     list.appendChild(el);
   });
+}
+
+function charToggleType(idx) {
+  const name = (S.scenario.characters || [])[idx]; if (!name) return;
+  const meta = charMeta(name);
+  meta.type = meta.type === 'npc' ? 'pc' : 'npc';
+  save(); renderCharacterSettings();
+}
+
+function charSetColor(idx, color) {
+  const name = (S.scenario.characters || [])[idx]; if (!name) return;
+  charMeta(name).color = color;
+  save();
+  // ボーダー色だけ即時反映
+  const tags = qsa('#char-list .sfx-tag');
+  if (tags[idx]) tags[idx].style.borderLeft = `3px solid ${color}`;
 }
 
 function addCharacter() {
@@ -1988,6 +2019,7 @@ function addCharacter() {
     return;
   }
   S.scenario.characters.push(name);
+  charMeta(name); // デフォルトメタを初期化（type:'pc'）
   inp.value = '';
   inp.focus();
   save();
@@ -1996,7 +2028,9 @@ function addCharacter() {
 
 function removeCharacter(idx) {
   if (!S.scenario.characters) return;
+  const name = S.scenario.characters[idx];
   S.scenario.characters.splice(idx, 1);
+  if (name && S.scenario.characterMeta) delete S.scenario.characterMeta[name];
   save();
   renderCharacterSettings();
 }
@@ -2116,17 +2150,21 @@ function renderScoringMissions() {
   });
   if (migrated) save();
 
-  if (!chars.length) {
-    el.innerHTML = '<div class="empty">キャラクターが登録されていません（📋 記録設定 › キャラクタータブで追加してください）</div>';
+  const pcChars = chars.filter(name => charMeta(name).type !== 'npc');
+
+  if (!pcChars.length) {
+    el.innerHTML = '<div class="empty">PCキャラクターが登録されていません（📋 記録設定 › キャラクタータブで追加してください）</div>';
     return;
   }
 
   let html = '';
-  chars.forEach(charName => {
+  pcChars.forEach(charName => {
     const charMs = missions.filter(m => m.charName === charName);
+    const meta   = charMeta(charName);
+    const accentStyle = meta.color ? `border-left:3px solid ${meta.color};` : '';
     html += `
       <div style="margin-bottom:14px">
-        <div style="font-size:13px;font-weight:600;padding:6px 10px;background:var(--bg-2);border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0">
+        <div style="font-size:13px;font-weight:600;padding:6px 10px;background:var(--bg-2);border:1px solid var(--border);border-bottom:none;border-radius:5px 5px 0 0;${accentStyle}">
           ${escHtml(charName)}
           <span style="font-size:11px;font-weight:400;color:var(--text-dim);margin-left:6px">${charMs.length}件</span>
         </div>
@@ -2295,7 +2333,7 @@ function calcScores() {
   const chars    = S.scenario.characters || [];
 
   const charMap = {};
-  chars.forEach(c => { charMap[c] = []; });
+  chars.filter(c => charMeta(c).type !== 'npc').forEach(c => { charMap[c] = []; });
   missions.forEach(m => {
     if (!m.charName || !charMap[m.charName]) return;
     if (m.scoreType === 'count') {
@@ -4701,6 +4739,7 @@ function migrate(scenario) {
     });
   });
   if (!scenario.characters)       scenario.characters       = [];
+  if (!scenario.characterMeta)    scenario.characterMeta    = {};
   if (!scenario.recordSections)   scenario.recordSections   = [];
   if (!scenario.gameRecord)       scenario.gameRecord       = {};
   if (!scenario.judgmentSections) scenario.judgmentSections = [];
