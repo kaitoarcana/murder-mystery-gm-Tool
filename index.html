@@ -1246,6 +1246,10 @@
         <button class="btn-ghost" id="btn-import" style="font-size:12px">📥 インポート</button>
         <input type="file" id="in-import" accept=".json" style="display:none">
       </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-ghost" style="font-size:12px;color:var(--red)" onclick="resetGame()">🔄 ゲーム初期化</button>
+        <button class="btn-ghost" style="font-size:12px;color:var(--red)" onclick="newScenario()">📄 新規作成</button>
+      </div>
     </div>
 
     <div class="mtab-content" id="t-display">
@@ -7706,6 +7710,38 @@ function exportJSON() {
   a.download = (S.scenario.name || 'scenario') + '.json';
   a.click(); URL.revokeObjectURL(a.href);
 }
+function resetGame() {
+  if (!confirm('ゲーム中の記録（入力データ・フェイズ位置・チェックリスト）をすべてリセットします。\nシナリオ設定はそのまま残ります。よろしいですか？')) return;
+  timerClear();
+  S.timer.rem = 0; S.timer.total = 0; S.timer.state = 'stopped';
+  if (S.audio.current) stopCurrent();
+  delete S.scenario.gameRecord;
+  S.checkState = {};
+  S.curPhase = -1;
+  save();
+  renderNav();
+  renderScenarioDisplay();
+  if (S.scenario.phases.length) selectPhase(0);
+  closeModal('ov-settings');
+  notify('ゲームを初期化しました', 'ok');
+}
+
+function newScenario() {
+  if (!confirm('シナリオをまっさらにします。\nAPI設定・Drive設定を除くすべてのデータが消去されます。よろしいですか？')) return;
+  timerClear();
+  S.timer.rem = 0; S.timer.total = 0; S.timer.state = 'stopped';
+  if (S.audio.current) stopCurrent();
+  S.scenario = { name: '', phases: [] };
+  S.curPhase = -1;
+  S.checkState = {};
+  qs('#in-scenario-name').value = '';
+  save();
+  renderNav();
+  renderScenarioDisplay();
+  closeModal('ov-settings');
+  notify('新規シナリオを作成しました', 'ok');
+}
+
 function importJSON(e) {
   const f = e.target.files[0]; if (!f) return;
   const r = new FileReader();
