@@ -4234,10 +4234,10 @@ function renderTableEditor(body, sec) {
           ondrop="recDrop(event,'tablerow','${row.id}','${sec.id}')">
         <td style="font-size:11px;color:var(--text-dim);text-align:center;padding:5px 4px;vertical-align:middle;cursor:grab">
           <span class="drag-handle" style="display:block;text-align:center">${ri+1}</span>
+          <button class="btn-ghost" onclick="openRowRules('${row.id}')" style="padding:1px 4px;font-size:11px;margin-top:2px;display:block;width:100%" title="自動入力ルール">⚡${(row.autoFillRules?.length||0)?`<span style="font-size:9px;color:var(--accent)">${row.autoFillRules.length}</span>`:''}</button>
         </td>
         ${cells}
-        <td style="padding:4px;vertical-align:middle;white-space:nowrap">
-          <button class="btn-ghost" onclick="openRowRules('${row.id}')" style="padding:2px 5px;font-size:11px" title="自動入力ルール">⚡${(row.autoFillRules?.length||0)?`<span style="font-size:9px;color:var(--accent);margin-left:1px">${row.autoFillRules.length}</span>`:''}</button>
+        <td style="padding:4px;vertical-align:middle">
           <button class="btn-ghost" onclick="secRemoveTableRow('${row.id}')" style="padding:2px 6px;font-size:11px">✕</button>
         </td>
       </tr>`;
