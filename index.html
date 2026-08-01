@@ -2481,7 +2481,7 @@ function showMainScore(rows) {
   if (!overlay || !container) return;
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const _sth = 'position:sticky;top:0;z-index:1;background:rgba(15,15,15,0.97);border-bottom:1px solid rgba(255,255,255,0.3)';
-  let html = `<table style="width:100%;border-collapse:collapse;color:#fff;font-size:clamp(13px,2vw,18px)">
+  let html = `<table style="width:100%;border-collapse:separate;border-spacing:0;color:#fff;font-size:clamp(13px,2vw,18px)">
     <thead><tr>
       <th style="${_sth};padding:10px 14px;text-align:left">配役</th>
       <th style="${_sth};padding:10px 12px;text-align:left">項目</th>
