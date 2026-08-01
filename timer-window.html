@@ -8,7 +8,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: #000;
+      background: #000 center/cover no-repeat;
       width: 100vw; height: 100vh;
       overflow: hidden;
       user-select: none;
@@ -167,7 +167,7 @@
   </div>
 
   <!-- 得点表オーバーレイ -->
-  <div id="score-overlay" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.88);overflow-y:auto;padding:clamp(16px,4vw,60px)">
+  <div id="score-overlay" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.88);overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:clamp(16px,4vw,60px)">
     <button onclick="hideScoreTable()"
       style="position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:14px;z-index:2">✕ 閉じる</button>
     <div id="score-table-container"></div>
@@ -293,6 +293,8 @@
       const currEl = currentBgSlot === 'a' ? bgA : bgB;
       currentBgSlot = nextSlot;
       nextEl.style.backgroundImage = url ? `url("${url}")` : 'none';
+      // bodyにも同じ画像を設定することで画面回転時のフラッシュを防ぐ
+      document.body.style.backgroundImage = url ? `url("${url}")` : '';
       if (transition === 'fade') {
         nextEl.style.transition = '';
         nextEl.style.opacity = '0';

@@ -1816,6 +1816,12 @@
 </div>
 
 
+<!-- ================================================================ Main Score Overlay ================================================================ -->
+<div id="main-score-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.92);overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:clamp(16px,4vw,40px) clamp(12px,3vw,32px) 40px">
+  <button onclick="hideMainScore()" style="position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:14px;z-index:601">✕ 閉じる</button>
+  <div id="main-score-container" style="margin-top:10px"></div>
+</div>
+
 <!-- ================================================================ Numpad Modal ================================================================ -->
 <div class="overlay hidden" id="ov-numpad" style="z-index:1100">
   <div style="background:var(--bg-1);border:1px solid var(--border-h);border-radius:12px;padding:10px;width:196px;box-shadow:0 24px 60px var(--shadow-deep)">
@@ -2382,6 +2388,7 @@ function broadcastScoreTable() {
   if (!S.bc) return;
   const rows = calcScores();
   if (!rows.length) { notify('得点ミッションが設定されていません', 'warn'); return; }
+  showMainScore(rows);
   const send = () => S.bc.postMessage({ type: 'score-table', rows, visible: true });
   if (!S.subWin || S.subWin.closed) {
     S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', 'width=900,height=560,resizable=yes');
@@ -2389,6 +2396,57 @@ function broadcastScoreTable() {
   } else {
     send();
   }
+}
+
+function showMainScore(rows) {
+  const overlay = qs('#main-score-overlay');
+  const container = qs('#main-score-container');
+  if (!overlay || !container) return;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let html = `<table style="width:100%;border-collapse:collapse;color:#fff;font-size:clamp(13px,2vw,18px)">
+    <thead><tr style="background:rgba(255,255,255,0.1)">
+      <th style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.2)">配役</th>
+      <th style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.2)">項目</th>
+      <th style="padding:10px 12px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.2)">得点</th>
+      <th style="padding:10px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.2)">成否</th>
+      <th style="padding:10px 12px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.2)">獲得</th>
+    </tr></thead><tbody>`;
+  rows.forEach(({charName, items, total}) => {
+    const gBdr = '2px solid rgba(255,255,255,0.25)';
+    items.forEach((it, idx) => {
+      const rowBg  = idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
+      const cellBdr = 'border-bottom:1px solid rgba(255,255,255,0.07)';
+      html += `<tr style="background:${rowBg}">`;
+      if (idx === 0) {
+        html += `<td rowspan="${items.length + 1}" style="padding:8px 14px;vertical-align:middle;text-align:center;font-weight:600;border-right:1px solid rgba(255,255,255,0.1);border-bottom:${gBdr}">${esc(charName)}</td>`;
+      }
+      html += `<td style="padding:8px 12px;${cellBdr}">${esc(it.name)}</td>`;
+      const isCount = it.scoreType === 'count';
+      html += `<td style="padding:8px 12px;text-align:right;${cellBdr}">${isCount ? `${it.points}×` : it.points}</td>`;
+      let mark, acqColor;
+      if (isCount) {
+        mark = `<span style="color:#f5a623">${it.count}件</span>`;
+        acqColor = it.count > 0 ? '#fff' : 'rgba(255,255,255,0.35)';
+      } else {
+        mark = it.achieved ? '<span style="color:#3ecf8e">○</span>' : '<span style="color:rgba(255,255,255,0.25)">✕</span>';
+        acqColor = it.achieved ? '#fff' : 'rgba(255,255,255,0.25)';
+      }
+      html += `<td style="padding:8px 12px;text-align:center;${cellBdr}">${mark}</td>`;
+      html += `<td style="padding:8px 12px;text-align:right;${cellBdr};color:${acqColor}">${it.acquired}</td></tr>`;
+    });
+    html += `<tr style="background:rgba(255,255,255,0.07)">
+      <td colspan="3" style="padding:8px 12px;text-align:right;font-size:0.85em;color:rgba(255,255,255,0.55);border-bottom:${gBdr}">合計</td>
+      <td style="padding:8px 12px;text-align:right;font-weight:700;font-size:1.1em;border-bottom:${gBdr}">${total}</td>
+    </tr>`;
+  });
+  container.innerHTML = html + '</tbody></table>';
+  overlay.scrollTop = 0;
+  overlay.style.display = 'block';
+}
+
+function hideMainScore() {
+  const overlay = qs('#main-score-overlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════════════
