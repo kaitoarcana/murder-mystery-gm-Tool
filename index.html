@@ -324,7 +324,7 @@
     }
     /* ── Timer ── */
     .timer-box {
-      text-align: center; padding: 12px 0 16px;
+      text-align: center; padding: 24px 0 28px;
       position: relative; border-radius: var(--radius);
       border: 1px solid transparent;
       transition: background 1.2s ease, border-color 1.2s ease;
@@ -345,8 +345,8 @@
     .timer-box.state-paused::before   { opacity: 1; background: var(--yellow-4); }
     .timer-box.state-finished::before { opacity: 1; background: var(--red-5); }
     #time-display {
-      font-size: 60px; font-weight: 700; font-family: 'Courier New', 'Consolas', monospace;
-      letter-spacing: 4px; line-height: 1;
+      font-size: 76px; font-weight: 700; font-family: 'Courier New', 'Consolas', monospace;
+      letter-spacing: 5px; line-height: 1;
       transition: color .4s, text-shadow .6s;
       color: var(--text);
       position: relative;
@@ -821,21 +821,12 @@
       font-weight: 400;
     }
 
-    /* ── Now Playing Bar (フェイズナビ直下の常時表示帯) ── */
-    #now-playing-bar {
-      flex-shrink: 0; display: flex; align-items: center; gap: 12px;
-      padding: 6px 16px; background: var(--bg-1);
-      border-bottom: 1px solid var(--border);
-    }
-    #now-playing-bar .now-playing { flex: 1; min-height: 44px; }
-    #now-playing-bar .vol-row { width: 180px; flex-shrink: 0; }
-
     /* ── BGM panel: sticky top + scrollable area ── */
     #panel-bgm { padding: 0; overflow: hidden; gap: 0; }
     .bgm-sticky-top {
-      flex-shrink: 0; padding: 10px 16px 8px;
+      flex-shrink: 0; padding: 14px 16px 12px;
       border-bottom: 1px solid var(--border);
-      display: flex; flex-direction: column; gap: 8px;
+      display: flex; flex-direction: column; gap: 12px;
     }
     .bgm-scroll {
       flex: 1; overflow-y: auto;
@@ -1026,7 +1017,7 @@
     /* ── 縦画面モード (body.portrait-mode クラスで適用) ──
        左列(300px)はそのまま。タイマー＋BGMを縦積み、右側にGM資料が広がる。 */
     body.portrait-mode #main {
-      grid-template-columns: 35% 1fr;
+      grid-template-columns: 300px 1fr;
       grid-template-rows: auto 1fr;
     }
     body.portrait-mode #panel-timer {
@@ -1066,25 +1057,6 @@
   <button id="phase-add-tab" title="フェイズを追加">＋</button>
 </nav>
 
-<!-- ■ Now Playing Bar (常時表示: 再生中BGM + 音量) -->
-<div id="now-playing-bar">
-  <div id="now-playing" class="now-playing idle">
-    <div class="np-viz">
-      <span class="vbar"></span><span class="vbar"></span><span class="vbar"></span>
-    </div>
-    <div id="np-name">再生中のBGMなし</div>
-    <div class="np-btns">
-      <button class="btn-yellow" id="btn-np-fade" title="フェイドアウト">↓ フェード</button>
-      <button class="btn-red"    id="btn-np-stop" title="停止">■ 停止</button>
-    </div>
-  </div>
-  <div class="vol-row">
-    <span style="width:32px">音量</span>
-    <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.7">
-    <span id="vol-display" style="width:36px;text-align:right">70%</span>
-  </div>
-</div>
-
 <div id="main">
 
   <!-- ■ Timer Panel -->
@@ -1116,20 +1088,44 @@
       </div>
       <button class="btn-ghost" id="btn-apply" style="width:100%;margin-top:10px;min-height:48px;font-size:13px">タイマーに適用</button>
     </div>
+    <button class="btn-ghost" id="btn-open-sub" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
+      📺 フェイズウィンドウを開く
+    </button>
     <button class="btn-ghost" id="btn-phase-display" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
       🖼 フェイズ表示設定
+    </button>
+    <button class="btn-ghost" id="btn-cond-phase" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
+      🔀 判定連動設定
+    </button>
+    <button class="btn-ghost" id="btn-score-display" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
+      📊 得点表示
     </button>
   </div>
 
   <!-- ■ BGM Panel -->
   <div class="panel" id="panel-bgm">
 
-    <!-- Sticky top: title + action buttons -->
+    <!-- Sticky top: title + Now Playing + volume -->
     <div class="bgm-sticky-top">
       <div class="section-title" style="padding-bottom:0;border-bottom:none;margin-bottom:0">BGM &amp; 効果音</div>
-      <div style="display:flex;gap:6px">
-        <button class="btn-ghost" id="btn-cond-phase" style="flex:1;padding:8px 4px;font-size:11px;letter-spacing:0">🔀 判定連動設定</button>
-        <button class="btn-ghost" id="btn-score-display" style="flex:1;padding:8px 4px;font-size:11px;letter-spacing:0">📊 得点表示</button>
+
+      <!-- Now Playing bar — always visible -->
+      <div id="now-playing" class="now-playing idle">
+        <div class="np-viz">
+          <span class="vbar"></span><span class="vbar"></span><span class="vbar"></span>
+        </div>
+        <div id="np-name">再生中のBGMなし</div>
+        <div class="np-btns">
+          <button class="btn-yellow" id="btn-np-fade" title="フェイドアウト">↓ フェード</button>
+          <button class="btn-red"    id="btn-np-stop" title="停止">■ 停止</button>
+        </div>
+      </div>
+
+      <!-- Volume -->
+      <div class="vol-row">
+        <span style="width:32px">音量</span>
+        <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.7">
+        <span id="vol-display" style="width:36px;text-align:right">70%</span>
       </div>
     </div>
 
@@ -6345,6 +6341,7 @@ function bindAll() {
   qs('#btn-mode').onclick     = toggleMode;
   qs('#btn-open-timer').onclick = openTimerWin;
   qs('#btn-settings').onclick = () => openModal('ov-settings');
+  qs('#btn-open-sub').onclick = openTimerWin;
   qs('#phase-add-tab').onclick = phaseAddNew;
 
   qs('#btn-start').onclick = timerStart;
