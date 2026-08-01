@@ -1048,9 +1048,12 @@
     body.portrait-mode #portrait-bgm-btns { display: flex; flex-direction: column; gap: 6px; }
 
     /* 縦画面: GM資料上のNowPlayingエリア（デフォルト非表示） */
-    #portrait-np-area { display: none; flex-direction: column; gap: 8px;
-      flex-shrink: 0; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    #portrait-np-area { display: none; flex-direction: column; gap: 6px;
+      flex-shrink: 0; padding: 8px 14px; border-bottom: 1px solid var(--border); }
     body.portrait-mode #portrait-np-area { display: flex; }
+    /* 縦画面: Now Playingエリア内の高さを縮小（現状の約75%） */
+    #portrait-np-area .now-playing { padding: 9px 10px; min-height: 0; }
+    #portrait-np-area .np-btns button { min-height: 38px; padding: 0 11px; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -1134,12 +1137,6 @@
     <div class="bgm-sticky-top">
       <div class="section-title" style="padding-bottom:0;border-bottom:none;margin-bottom:0">BGM &amp; 効果音</div>
 
-      <!-- 縦画面のみ表示: 判定連動・得点表示ボタン -->
-      <div id="portrait-bgm-btns">
-        <button class="btn-ghost" onclick="document.getElementById('btn-cond-phase').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">🔀 判定連動設定</button>
-        <button class="btn-ghost" onclick="document.getElementById('btn-score-display').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">📊 得点表示</button>
-      </div>
-
       <!-- Now Playing bar — always visible -->
       <div id="now-playing" class="now-playing idle">
         <div class="np-viz">
@@ -1180,6 +1177,12 @@
         <button class="btn-ghost" id="btn-bgm-add" style="width:100%;margin-top:6px;font-size:12px">
           ＋ BGMを追加…
         </button>
+      </div>
+
+      <!-- 縦画面のみ表示: 判定連動・得点表示ボタン（フェイズBGM設定の直下） -->
+      <div id="portrait-bgm-btns">
+        <button class="btn-ghost" onclick="document.getElementById('btn-cond-phase').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">🔀 判定連動設定</button>
+        <button class="btn-ghost" onclick="document.getElementById('btn-score-display').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">📊 得点表示</button>
       </div>
 
       <!-- SFX -->
