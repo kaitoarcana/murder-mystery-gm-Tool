@@ -396,6 +396,7 @@
       z-index: 1;
       flex-shrink: 0;
     }
+    .drum-wrap:focus { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius-sm); }
     .drum-wrap::before, .drum-wrap::after {
       content: ''; position: absolute; left: 0; right: 0; height: 50px;
       z-index: 2; pointer-events: none;
@@ -6352,6 +6353,25 @@ function drumHighlight(scrollEl) {
   });
 }
 
+function addDrumInteractions(scrollEl) {
+  // マウスホイール: 1ノッチ = 1ステップに固定（デフォルトは約3ステップ飛ぶため）
+  scrollEl.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    drumSetValue(scrollEl, drumGetValue(scrollEl) + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+
+  // キーボード上下キー: drum-wrapをfocusable化して受け取る
+  const wrap = scrollEl.closest('.drum-wrap');
+  if (wrap) {
+    wrap.tabIndex = 0;
+    wrap.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      e.preventDefault();
+      drumSetValue(scrollEl, drumGetValue(scrollEl) + (e.key === 'ArrowDown' ? 1 : -1));
+    });
+  }
+}
+
 function initDrums() {
   // Main panel
   const minEl = qs('#drum-min-scroll');
@@ -6363,6 +6383,8 @@ function initDrums() {
   drumHighlight(minEl); drumHighlight(secEl);
   minEl.addEventListener('scroll', () => { qs('#in-min').value = drumGetValue(minEl); drumHighlight(minEl); }, { passive: true });
   secEl.addEventListener('scroll', () => { qs('#in-sec').value = drumGetValue(secEl); drumHighlight(secEl); }, { passive: true });
+  addDrumInteractions(minEl);
+  addDrumInteractions(secEl);
 
   // Phase modal
   const phMinEl = qs('#drum-ph-min-scroll');
@@ -6371,6 +6393,8 @@ function initDrums() {
   buildDrumCol(phSecEl, 60);
   phMinEl.addEventListener('scroll', () => { qs('#ph-min').value = drumGetValue(phMinEl); drumHighlight(phMinEl); }, { passive: true });
   phSecEl.addEventListener('scroll', () => { qs('#ph-sec').value = drumGetValue(phSecEl); drumHighlight(phSecEl); }, { passive: true });
+  addDrumInteractions(phMinEl);
+  addDrumInteractions(phSecEl);
 }
 
 function drumSyncPhaseModal(min, sec) {
