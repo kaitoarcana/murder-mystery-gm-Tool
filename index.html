@@ -6395,7 +6395,7 @@ function bindAll() {
   qs('#btn-start').onclick = timerStart;
   qs('#btn-pause').onclick = timerPause;
   qs('#btn-reset').onclick = timerReset;
-  qs('#btn-apply').onclick = applyDuration;
+  qs('#btn-apply').onclick = () => { applyDuration(); closePortraitTimeModal(); };
 
   qs('#vol-slider').oninput = onVolChange;
   qs('#btn-np-stop').onclick = stopCurrent;
