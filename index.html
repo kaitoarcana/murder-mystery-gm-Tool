@@ -1802,6 +1802,36 @@
 </div>
 
 
+<!-- ================================================================ Numpad Modal ================================================================ -->
+<div class="overlay hidden" id="ov-numpad" style="z-index:1100">
+  <div class="modal" style="width:220px">
+    <div class="modal-hd" style="padding:10px 14px">
+      <h2 style="font-size:14px">数値入力</h2>
+      <button class="modal-close" onclick="numpadClose()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:10px">
+      <div id="numpad-display" style="font-size:24px;text-align:right;padding:6px 10px;background:var(--bg-3);border-radius:var(--radius-sm);margin-bottom:10px;min-height:42px;font-family:var(--font-mono)">0</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        <button class="btn-ghost" onclick="numpadInput('7')" style="font-size:18px;padding:10px 0">7</button>
+        <button class="btn-ghost" onclick="numpadInput('8')" style="font-size:18px;padding:10px 0">8</button>
+        <button class="btn-ghost" onclick="numpadInput('9')" style="font-size:18px;padding:10px 0">9</button>
+        <button class="btn-ghost" onclick="numpadInput('4')" style="font-size:18px;padding:10px 0">4</button>
+        <button class="btn-ghost" onclick="numpadInput('5')" style="font-size:18px;padding:10px 0">5</button>
+        <button class="btn-ghost" onclick="numpadInput('6')" style="font-size:18px;padding:10px 0">6</button>
+        <button class="btn-ghost" onclick="numpadInput('1')" style="font-size:18px;padding:10px 0">1</button>
+        <button class="btn-ghost" onclick="numpadInput('2')" style="font-size:18px;padding:10px 0">2</button>
+        <button class="btn-ghost" onclick="numpadInput('3')" style="font-size:18px;padding:10px 0">3</button>
+        <button class="btn-ghost" onclick="numpadInput('C')" style="font-size:14px;padding:10px 0;color:var(--red)">C</button>
+        <button class="btn-ghost" onclick="numpadInput('0')" style="font-size:18px;padding:10px 0">0</button>
+        <button class="btn-ghost" onclick="numpadInput('⌫')" style="font-size:16px;padding:10px 0">⌫</button>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-primary" onclick="numpadConfirm()" style="flex:1">確定</button>
+    </div>
+  </div>
+</div>
+
 <!-- ================================================================ Judgment Result Modal ================================================================ -->
 <div class="overlay hidden" id="ov-judgment-result">
   <div class="modal" style="width:560px">
@@ -2730,8 +2760,7 @@ function buildSimpleCondUI(cond, fnPrefix, allowNone) {
   }
   const fieldReady = sec && cond?.rowId && (!isTable || cond?.colId);
   if (fieldReady) {
-    const opOpts = [['eq','＝'],['neq','≠'],['contains','含む']].map(([v,l]) =>
-      `<option value="${v}"${(cond?.op||'eq')===v?' selected':''}>${l}</option>`).join('');
+    const opOpts = buildOpOpts(cond?.op||'eq', getCondFieldType(sec, cond.rowId, cond.colId), 'short');
     html += `<select class="form-control-sm" style="max-width:80px" onchange="${fnPrefix},'op',this.value)">${opOpts}</select>`;
     html += buildCondValueInput(sec, cond.rowId, cond.colId, cond, `${fnPrefix},'value',this.value)`);
   }
@@ -2841,10 +2870,9 @@ function renderCondRowHTML(node, ruleId, depth) {
           `<option value="${c.id}"${node.colId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
         ).join('')
       : '';
-    const opOpts = [['eq','と等しい'],['neq','と等しくない'],['contains','を含む']]
-      .map(([v,l]) => `<option value="${v}"${node.op===v?' selected':''}>${l}</option>`).join('');
     const compareType = node.compareType || 'value';
     const fieldReady  = sec && node.rowId && (!isTable || node.colId);
+    const opOpts = buildOpOpts(node.op, getCondFieldType(sec, node.rowId, node.colId), 'long');
     const itemLabel   = isTable ? '行' : '項目';
     let rhsHtml = '';
     if (fieldReady) {
@@ -3052,9 +3080,8 @@ function renderScoringRuleArea(ph, el) {
     const colOpts = isTable ? (sec.columns||[]).map(c =>
       `<option value="${c.id}"${sc.colId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
     ).join('') : '';
-    const opOpts = [['eq','と等しい'],['neq','と等しくない'],['contains','を含む']].map(([v,l]) =>
-      `<option value="${v}"${sc.op===v?' selected':''}>${l}</option>`).join('');
     const fieldReady  = sec && sc.rowId && (!isTable || sc.colId);
+    const opOpts = buildOpOpts(sc.op, getCondFieldType(sec, sc.rowId, sc.colId), 'long');
     const itemLabel   = isTable ? '行' : '項目';
     const changeExpr  = `scCondSet('${sc.id}','value',this.value)`;
     return `<div class="score-cond-row" style="flex-wrap:wrap;align-items:center;gap:5px">
@@ -4036,6 +4063,7 @@ function renderFormEditor(body, sec) {
     { v:'character', l:'キャラクター' },
     { v:'toggle',    l:'オン/オフ' },
     { v:'select',    l:'選択肢' },
+    { v:'number',    l:'数値' },
   ].map(t => `<option value="${t.v}"${sel===t.v?' selected':''}>${t.l}</option>`).join('');
 
   const rowsHtml = rows.map((row) => {
@@ -4148,7 +4176,7 @@ function secMoveFormRow(rowId, dir) {
 
 // ── Table Editor ─────────────────────────────────────
 function secTypeLabel(type) {
-  return { text: 'テキスト', character: 'キャラ', toggle: 'オン/オフ', select: '選択肢' }[type] || type;
+  return { text: 'テキスト', character: 'キャラ', toggle: 'オン/オフ', select: '選択肢', number: '数値' }[type] || type;
 }
 
 function renderTableEditor(body, sec) {
@@ -4159,6 +4187,7 @@ function renderTableEditor(body, sec) {
     { v:'character', l:'キャラクター' },
     { v:'toggle',    l:'オン/オフ' },
     { v:'select',    l:'選択肢' },
+    { v:'number',    l:'数値' },
   ].map(t => `<option value="${t.v}"${sel===t.v?' selected':''}>${t.l}</option>`).join('');
 
   const colsHtml = cols.map(col => {
@@ -4615,6 +4644,10 @@ function buildRecordInput(secId, rowId, colId, type, curVal, defObj) {
     const on = curVal === true || curVal === 'true';
     return `<button class="btn-ghost" style="font-size:12px;min-width:70px;background:${on?'var(--accent-dim)':'var(--bg-3)'};color:${on?'var(--accent)':'var(--text-dim)'}" onclick="recordToggle('${secId}','${rowId}',${cid})">${on ? tl : fl}</button>`;
   }
+  if (type === 'number') {
+    const display = (curVal !== '' && curVal !== null && curVal !== undefined) ? String(curVal) : '──';
+    return `<button class="btn-ghost" style="min-width:60px;font-size:13px;font-family:var(--font-mono)" onclick="numpadOpen('${secId}','${rowId}',${cid},'${escHtml(String(curVal??''))}')">${escHtml(display)}</button>`;
+  }
   if (type === 'select') {
     const opts2 = (defObj?.options||'').split(',').map(o=>o.trim()).filter(Boolean);
     const optHtml = opts2.map(o => `<option value="${escHtml(o)}"${curVal===o?' selected':''}>${escHtml(o)}</option>`).join('');
@@ -5070,6 +5103,32 @@ function broadcastPreloadScenes(phaseIdx) {
 }
 
 // ═══════════════════════════════════════════════════════
+// Numpad
+// ═══════════════════════════════════════════════════════
+let _numpadState = { secId:'', rowId:'', colId:null, val:'' };
+
+function numpadOpen(secId, rowId, colId, curVal) {
+  _numpadState = { secId, rowId, colId: colId || null, val: String(curVal ?? '') };
+  qs('#numpad-display').textContent = _numpadState.val || '0';
+  openModal('ov-numpad');
+}
+
+function numpadInput(ch) {
+  if (ch === 'C')  { _numpadState.val = ''; }
+  else if (ch === '⌫') { _numpadState.val = _numpadState.val.slice(0, -1); }
+  else { _numpadState.val += ch; }
+  qs('#numpad-display').textContent = _numpadState.val || '0';
+}
+
+function numpadConfirm() {
+  const { secId, rowId, colId, val } = _numpadState;
+  recordSetValue(secId, rowId, colId, val);
+  closeModal('ov-numpad');
+}
+
+function numpadClose() { closeModal('ov-numpad'); }
+
+// ═══════════════════════════════════════════════════════
 // Ending: Evaluation Engine
 // ═══════════════════════════════════════════════════════
 // ── Condition field helpers ───────────────────────────
@@ -5082,6 +5141,16 @@ function getCondFieldDef(sec, rowId, colId) {
 function getCondFieldType(sec, rowId, colId) {
   const def = getCondFieldDef(sec, rowId, colId);
   return def?.type || def?.valueType || 'text';
+}
+function buildOpOpts(selectedOp, fieldType, style) {
+  const base = style === 'short'
+    ? [['eq','＝'],['neq','≠'],['contains','含む']]
+    : [['eq','と等しい'],['neq','と等しくない'],['contains','を含む']];
+  const numericOps = style === 'short'
+    ? [['gt','>'],['gte','≥'],['lt','<'],['lte','≤']]
+    : [['gt','より大きい'],['gte','以上'],['lt','より小さい'],['lte','以下']];
+  const ops = fieldType === 'number' ? [...base, ...numericOps] : base;
+  return ops.map(([v,l]) => `<option value="${v}"${selectedOp===v?' selected':''}>${l}</option>`).join('');
 }
 function getTableRowLabel(sec, row, idx) {
   const firstCol = (sec.columns||[])[0];
@@ -5119,6 +5188,9 @@ function buildCondValueInput(sec, rowId, colId, node, changeExpr) {
       `<option value="${escHtml(o)}"${cur===o?' selected':''}>${escHtml(o)}</option>`
     ).join('');
     return `<select class="form-control-sm" style="max-width:140px" onchange="${changeExpr}"><option value="">──</option>${optHtml}</select>`;
+  }
+  if (ftype === 'number') {
+    return `<input type="number" class="form-control-sm" value="${escHtml(cur)}" placeholder="数値" style="max-width:100px" onchange="${changeExpr}">`;
   }
   return `<input type="text" class="form-control-sm" value="${escHtml(cur)}" placeholder="値を入力" style="max-width:140px" onchange="${changeExpr}">`;
 }
@@ -5173,6 +5245,11 @@ function evalCondition(cond, rec, jResults) {
   if (cond.op === 'eq')       return lv === rv;
   if (cond.op === 'neq')      return lv !== rv;
   if (cond.op === 'contains') return lv.includes(rv);
+  const ln = parseFloat(lv), rn = parseFloat(rv);
+  if (cond.op === 'gt')  return !isNaN(ln) && !isNaN(rn) && ln >  rn;
+  if (cond.op === 'gte') return !isNaN(ln) && !isNaN(rn) && ln >= rn;
+  if (cond.op === 'lt')  return !isNaN(ln) && !isNaN(rn) && ln <  rn;
+  if (cond.op === 'lte') return !isNaN(ln) && !isNaN(rn) && ln <= rn;
   return false;
 }
 
