@@ -568,9 +568,9 @@
             if (data.visible) showScoreTable(data.rows || []);
             else hideScoreTable();
             break;
-          case 'score-scroll': {
+          case 'score-scroll-delta': {
             const so = document.getElementById('score-overlay');
-            if (so) so.scrollTop = data.top;
+            if (so) so.scrollTop += data.dy;
             break;
           }
         }

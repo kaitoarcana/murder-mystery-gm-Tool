@@ -2442,20 +2442,25 @@ function showMainScore(rows) {
   container.innerHTML = html + '</tbody></table>';
   overlay.scrollTop = 0;
   overlay.style.display = 'block';
-  // スクロール位置をフェイズウィンドウに同期
-  let _scrollRaf = null;
-  overlay.onscroll = () => {
-    if (_scrollRaf) return;
-    _scrollRaf = requestAnimationFrame(() => {
-      _scrollRaf = null;
-      if (S.bc) S.bc.postMessage({ type: 'score-scroll', top: overlay.scrollTop });
-    });
-  };
+  // タッチのデルタ量をそのままフェイズウィンドウに転送（縦・横画面どちらでも対応）
+  if (!overlay._scrollInited) {
+    overlay._scrollInited = true;
+    let _lastY = null;
+    overlay.addEventListener('touchstart', (e) => { _lastY = e.touches[0].clientY; }, { passive: true });
+    overlay.addEventListener('touchmove', (e) => {
+      if (_lastY === null) return;
+      const dy = _lastY - e.touches[0].clientY;
+      _lastY = e.touches[0].clientY;
+      if (dy !== 0 && S.bc) S.bc.postMessage({ type: 'score-scroll-delta', dy });
+    }, { passive: true });
+    overlay.addEventListener('touchend', () => { _lastY = null; }, { passive: true });
+  }
 }
 
 function hideMainScore() {
   const overlay = qs('#main-score-overlay');
   if (overlay) overlay.style.display = 'none';
+  if (S.bc) S.bc.postMessage({ type: 'score-table', visible: false });
 }
 
 // ═══════════════════════════════════════════════════════
