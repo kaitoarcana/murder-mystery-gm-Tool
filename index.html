@@ -1013,47 +1013,6 @@
     }
     .jsec-mode-badge.rule   { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-glow); }
     .jsec-mode-badge.direct { background: var(--green-6); color: var(--green); border-color: var(--green-35); }
-
-    /* ══════════════════════════════════════════════════════════
-       縦画面レイアウト
-       body.portrait-mode クラスで適用（実機回転 or デバッグボタン）
-       ══════════════════════════════════════════════════════════ */
-    body.portrait-mode #main {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto 1fr;
-    }
-    body.portrait-mode .panel { border-right: none; border-bottom: 1px solid var(--border); }
-    body.portrait-mode .panel:last-child { border-bottom: none; }
-
-    /* タイマーパネル: グリッドで左右2列に再配置 */
-    body.portrait-mode #panel-timer {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      grid-auto-rows: auto;
-      padding: 10px 14px;
-      gap: 8px;
-      overflow-y: visible;
-    }
-    body.portrait-mode #panel-timer > .section-title { grid-column: 1/-1; grid-row: 1; margin-bottom: 0; }
-    body.portrait-mode #panel-timer > .timer-box     { grid-column: 1;    grid-row: 2; padding: 8px 0 10px; text-align: left; align-self: center; }
-    body.portrait-mode #panel-timer > .timer-btns    { grid-column: 2;    grid-row: 2; flex-direction: column; align-items: stretch; align-self: center; gap: 6px; }
-    body.portrait-mode #panel-timer > .timer-btns button { min-height: 40px; padding: 0 10px; font-size: 13px; }
-    body.portrait-mode #panel-timer > .dur-row       { grid-column: 1;    grid-row: 3; }
-    body.portrait-mode #panel-timer > #btn-apply     { grid-column: 2;    grid-row: 3; width: auto !important; margin-top: 0 !important; align-self: end; min-height: 48px; }
-    body.portrait-mode #phase-btns-wrap              { grid-column: 1/-1; grid-row: 4; display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
-    body.portrait-mode #phase-btns-wrap .btn-ghost   { width: 100% !important; padding: 8px 4px !important; font-size: 11px !important; letter-spacing: 0 !important; }
-    body.portrait-mode #time-display { font-size: clamp(2.5rem, 9vw, 5rem); letter-spacing: 2px; }
-
-    /* ドラムピッカー: タイマーパネル内のみ縮小 */
-    body.portrait-mode #panel-timer .drum-wrap { height: 88px; }
-    body.portrait-mode #panel-timer .drum-wrap::before,
-    body.portrait-mode #panel-timer .drum-wrap::after { height: 22px; }
-
-    /* BGMパネル: コンパクト表示（内部スクロールあり） */
-    body.portrait-mode #panel-bgm { max-height: 36vh; overflow: hidden; }
-
-    /* GM資料パネル: 残り高さを全て占有 */
-    body.portrait-mode #panel-notes { min-height: 0; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -1063,7 +1022,6 @@
   <div id="scenario-display">シナリオ未設定</div>
   <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
   <div class="hdr-btn">
-    <button id="btn-portrait-toggle" onclick="togglePortraitDebug()" title="縦画面テスト（デバッグ用）" style="font-size:11px;padding:4px 9px;border:1px dashed var(--border-h);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">🔄 縦</button>
     <button id="btn-theme" title="ライト/ダーク切り替え">☀</button>
     <button id="btn-mode" class="mastering">📝 マスタリング</button>
     <button class="btn-ghost" id="btn-open-timer" style="font-size:12px">📺 フェイズ画面</button>
@@ -1115,20 +1073,18 @@
       </div>
       <button class="btn-ghost" id="btn-apply" style="width:100%;margin-top:10px;min-height:48px;font-size:13px">タイマーに適用</button>
     </div>
-    <div id="phase-btns-wrap">
-      <button class="btn-ghost" id="btn-open-sub" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
-        📺 フェイズウィンドウを開く
-      </button>
-      <button class="btn-ghost" id="btn-phase-display" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
-        🖼 フェイズ表示設定
-      </button>
-      <button class="btn-ghost" id="btn-cond-phase" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
-        🔀 判定連動設定
-      </button>
-      <button class="btn-ghost" id="btn-score-display" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
-        📊 得点表示
-      </button>
-    </div>
+    <button class="btn-ghost" id="btn-open-sub" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
+      📺 フェイズウィンドウを開く
+    </button>
+    <button class="btn-ghost" id="btn-phase-display" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
+      🖼 フェイズ表示設定
+    </button>
+    <button class="btn-ghost" id="btn-cond-phase" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
+      🔀 判定連動設定
+    </button>
+    <button class="btn-ghost" id="btn-score-display" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
+      📊 得点表示
+    </button>
   </div>
 
   <!-- ■ BGM Panel -->
@@ -8213,26 +8169,6 @@ function notify(msg, type = '') {
   if (notifTimer) clearTimeout(notifTimer);
   notifTimer = setTimeout(() => { el.className = ''; }, 3000);
 }
-
-// ── 縦画面モード: 実機回転 or デバッグボタンで portrait-mode クラスを付与 ──
-(function() {
-  const mq = window.matchMedia('(orientation: portrait)');
-  let _forced = false;
-  function applyPortrait() {
-    const on = mq.matches || _forced;
-    document.body.classList.toggle('portrait-mode', on);
-    const btn = document.getElementById('btn-portrait-toggle');
-    if (btn) {
-      btn.style.background  = on ? 'var(--accent-dim)' : 'transparent';
-      btn.style.color       = on ? 'var(--accent)'     : 'var(--text-dim)';
-      btn.style.borderStyle = on ? 'solid'             : 'dashed';
-      btn.title = on ? '縦画面テスト中（クリックで解除）' : '縦画面テスト（デバッグ用）';
-    }
-  }
-  mq.addEventListener('change', applyPortrait);
-  applyPortrait();
-  window.togglePortraitDebug = function() { _forced = !_forced; applyPortrait(); };
-})();
 </script>
 
 <!-- Floating table toolbar (position:fixed, shown when cursor is inside a table cell) -->
