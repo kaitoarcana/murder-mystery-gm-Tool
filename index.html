@@ -1248,6 +1248,20 @@
         <button class="btn-ghost" style="font-size:12px;color:var(--red)" onclick="resetGame()">🔄 ゲーム初期化</button>
         <button class="btn-ghost" style="font-size:12px;color:var(--red)" onclick="newScenario()">📄 新規作成</button>
       </div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <label class="form-label">シナリオ構造をClaudeに渡す</label>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">記録セクション・判定セクション・キャラクターの一覧をコピーします。別セッションのClaudeに貼り付けるとフィールドを自動参照してスクリプトを生成できます。</div>
+        <button class="btn-ghost" style="font-size:12px" onclick="exportScenarioStructure()">📋 構造情報をコピー</button>
+      </div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <label class="form-label">Claudeスクリプト実行</label>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Claudeが生成したスクリプトを貼り付けて実行します。DevToolsは不要です。</div>
+        <textarea id="claude-script-area" class="form-control" style="font-size:11px;min-height:90px;font-family:var(--font-mono);resize:vertical" placeholder="Claudeが生成したスクリプトをここに貼り付けてください…"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+          <button class="btn-ghost" style="font-size:12px" onclick="runClaudeScript()">▶ 実行する</button>
+          <span id="claude-script-result" style="font-size:11px"></span>
+        </div>
+      </div>
     </div>
 
     <div class="mtab-content" id="t-display">
@@ -1804,30 +1818,26 @@
 
 <!-- ================================================================ Numpad Modal ================================================================ -->
 <div class="overlay hidden" id="ov-numpad" style="z-index:1100">
-  <div class="modal" style="width:220px">
-    <div class="modal-hd" style="padding:10px 14px">
-      <h2 style="font-size:14px">数値入力</h2>
+  <div style="background:var(--bg-1);border:1px solid var(--border-h);border-radius:12px;padding:10px;width:196px;box-shadow:0 24px 60px var(--shadow-deep)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:12px;font-weight:600;font-family:var(--font-mincho);color:var(--text)">数値入力</span>
       <button class="modal-close" onclick="numpadClose()">✕</button>
     </div>
-    <div class="modal-body" style="padding:10px">
-      <div id="numpad-display" style="font-size:24px;text-align:right;padding:6px 10px;background:var(--bg-3);border-radius:var(--radius-sm);margin-bottom:10px;min-height:42px;font-family:var(--font-mono)">0</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-        <button class="btn-ghost" onclick="numpadInput('7')" style="font-size:18px;padding:10px 0">7</button>
-        <button class="btn-ghost" onclick="numpadInput('8')" style="font-size:18px;padding:10px 0">8</button>
-        <button class="btn-ghost" onclick="numpadInput('9')" style="font-size:18px;padding:10px 0">9</button>
-        <button class="btn-ghost" onclick="numpadInput('4')" style="font-size:18px;padding:10px 0">4</button>
-        <button class="btn-ghost" onclick="numpadInput('5')" style="font-size:18px;padding:10px 0">5</button>
-        <button class="btn-ghost" onclick="numpadInput('6')" style="font-size:18px;padding:10px 0">6</button>
-        <button class="btn-ghost" onclick="numpadInput('1')" style="font-size:18px;padding:10px 0">1</button>
-        <button class="btn-ghost" onclick="numpadInput('2')" style="font-size:18px;padding:10px 0">2</button>
-        <button class="btn-ghost" onclick="numpadInput('3')" style="font-size:18px;padding:10px 0">3</button>
-        <button class="btn-ghost" onclick="numpadInput('C')" style="font-size:14px;padding:10px 0;color:var(--red)">C</button>
-        <button class="btn-ghost" onclick="numpadInput('0')" style="font-size:18px;padding:10px 0">0</button>
-        <button class="btn-ghost" onclick="numpadInput('⌫')" style="font-size:16px;padding:10px 0">⌫</button>
-      </div>
-    </div>
-    <div class="modal-ft">
-      <button class="btn-primary" onclick="numpadConfirm()" style="flex:1">確定</button>
+    <div id="numpad-display" style="font-size:22px;text-align:right;padding:4px 8px;background:var(--bg-3);border-radius:var(--radius-sm);margin-bottom:6px;font-family:var(--font-mono);color:var(--text)">0</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">
+      <button class="btn-ghost" onclick="numpadInput('7')" style="font-size:16px;padding:7px 0;min-height:0">7</button>
+      <button class="btn-ghost" onclick="numpadInput('8')" style="font-size:16px;padding:7px 0;min-height:0">8</button>
+      <button class="btn-ghost" onclick="numpadInput('9')" style="font-size:16px;padding:7px 0;min-height:0">9</button>
+      <button class="btn-ghost" onclick="numpadInput('4')" style="font-size:16px;padding:7px 0;min-height:0">4</button>
+      <button class="btn-ghost" onclick="numpadInput('5')" style="font-size:16px;padding:7px 0;min-height:0">5</button>
+      <button class="btn-ghost" onclick="numpadInput('6')" style="font-size:16px;padding:7px 0;min-height:0">6</button>
+      <button class="btn-ghost" onclick="numpadInput('1')" style="font-size:16px;padding:7px 0;min-height:0">1</button>
+      <button class="btn-ghost" onclick="numpadInput('2')" style="font-size:16px;padding:7px 0;min-height:0">2</button>
+      <button class="btn-ghost" onclick="numpadInput('3')" style="font-size:16px;padding:7px 0;min-height:0">3</button>
+      <button class="btn-ghost" onclick="numpadInput('C')" style="font-size:13px;padding:7px 0;min-height:0;color:var(--red)">C</button>
+      <button class="btn-ghost" onclick="numpadInput('0')" style="font-size:16px;padding:7px 0;min-height:0">0</button>
+      <button class="btn-ghost" onclick="numpadInput('⌫')" style="font-size:14px;padding:7px 0;min-height:0">⌫</button>
+      <button class="btn-primary" onclick="numpadConfirm()" style="grid-column:span 3;padding:7px 0;min-height:0;font-size:14px;margin-top:2px">確定</button>
     </div>
   </div>
 </div>
@@ -5123,6 +5133,7 @@ function numpadInput(ch) {
 function numpadConfirm() {
   const { secId, rowId, colId, val } = _numpadState;
   recordSetValue(secId, rowId, colId, val);
+  renderRecordPanel();
   closeModal('ov-numpad');
 }
 
@@ -7973,6 +7984,80 @@ function newScenario() {
   renderScenarioDisplay();
   closeModal('ov-settings');
   notify('新規シナリオを作成しました', 'ok');
+}
+
+function exportScenarioStructure() {
+  const typeLabel = t => ({ text:'テキスト', character:'キャラ', toggle:'オン/オフ', select:'選択肢', number:'数値' }[t] || t || 'テキスト');
+  const lines = [`# GMツール シナリオ構造`, `シナリオ名: ${S.scenario.name || '（未設定）'}`, ''];
+
+  lines.push('## 記録セクション');
+  for (const sec of (S.scenario.recordSections || [])) {
+    lines.push(`- ${sec.name} [${sec.style === 'table' ? 'テーブル' : 'フォーム'}]`);
+    if (sec.style === 'table') {
+      for (const col of (sec.columns || [])) {
+        const opts = col.options ? `（共通選択肢: ${col.options}）` : '';
+        lines.push(`  列: ${col.name} [${typeLabel(col.type)}]${opts}`);
+      }
+      for (const row of (sec.rows || []).filter(r => !r.isHeader)) {
+        const firstCol = (sec.columns || [])[0];
+        const label = (firstCol && row.cells?.[firstCol.id]) ? String(row.cells[firstCol.id]) : '（ラベルなし）';
+        const perRowOpts = row.cellOptions
+          ? Object.entries(row.cellOptions).map(([k, v]) => {
+              const col = (sec.columns || []).find(c => c.id === k);
+              return v ? `${col?.name || k}: ${v}` : null;
+            }).filter(Boolean).join(' / ')
+          : '';
+        lines.push(`  行: ${label}${perRowOpts ? ` （行別選択肢: ${perRowOpts}）` : ''}`);
+      }
+    } else {
+      for (const row of (sec.rows || []).filter(r => !r.isHeader)) {
+        const opts = row.options ? `（選択肢: ${row.options}）` : '';
+        lines.push(`  項目: ${row.label} [${typeLabel(row.valueType)}]${opts}`);
+      }
+    }
+  }
+
+  if ((S.scenario.judgmentSections || []).length) {
+    lines.push('', '## 判定セクション');
+    for (const jsec of S.scenario.judgmentSections) {
+      const results = [...new Set((jsec.rules || []).map(r => r.result).filter(Boolean))];
+      lines.push(`- ${jsec.name}${results.length ? `（結果値: ${results.join(', ')}）` : ''}`);
+    }
+  }
+
+  if ((S.scenario.characters || []).length) {
+    lines.push('', '## キャラクター');
+    for (const c of S.scenario.characters) {
+      const npc = S.scenario.characterMeta?.[c]?.type === 'npc';
+      lines.push(`- ${c}${npc ? ' [NPC]' : ''}`);
+    }
+  }
+
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text)
+    .then(() => notify('シナリオ構造をコピーしました', 'ok'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      notify('シナリオ構造をコピーしました', 'ok');
+    });
+}
+
+function runClaudeScript() {
+  const code = qs('#claude-script-area').value.trim();
+  const result = qs('#claude-script-result');
+  if (!code) { result.textContent = ''; return; }
+  try {
+    // eslint-disable-next-line no-new-func
+    new Function(code)();
+    result.style.color = 'var(--green)';
+    result.textContent = '✓ 実行完了';
+    qs('#claude-script-area').value = '';
+  } catch (e) {
+    result.style.color = 'var(--red)';
+    result.textContent = '✗ エラー: ' + e.message;
+  }
 }
 
 function importJSON(e) {
