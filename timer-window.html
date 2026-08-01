@@ -167,7 +167,7 @@
   </div>
 
   <!-- 得点表オーバーレイ -->
-  <div id="score-overlay" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.88);overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:clamp(16px,4vw,60px)">
+  <div id="score-overlay" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.88);flex-direction:column;padding:clamp(16px,4vw,60px) clamp(16px,4vw,60px) 0">
     <button onclick="hideScoreTable()"
       style="position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:14px;z-index:2">✕ 閉じる</button>
     <div id="score-table-container"></div>
@@ -394,21 +394,29 @@
       const container = document.getElementById('score-table-container');
       if (!overlay || !container) return;
 
-      const _sth = 'position:sticky;top:0;z-index:1;background:rgba(15,15,15,0.97);border-bottom:1px solid rgba(255,255,255,0.3)';
-      let html = `<table style="width:100%;border-collapse:separate;border-spacing:0;color:#fff;font-size:clamp(14px,2.2vw,22px)">
-        <thead><tr>
-          <th style="${_sth};padding:12px 16px;text-align:left">配役</th>
-          <th style="${_sth};padding:12px 14px;text-align:left">項目</th>
-          <th style="${_sth};padding:12px 14px;text-align:right">得点</th>
-          <th style="${_sth};padding:12px 14px;text-align:center">成否</th>
-          <th style="${_sth};padding:12px 14px;text-align:right">獲得</th>
-        </tr></thead><tbody>`;
+      const CW = ['13%','57%','10%','9%','11%'];
+      const cg = `<colgroup>${CW.map(w=>`<col style="width:${w}">`).join('')}</colgroup>`;
+      const tS = `width:100%;table-layout:fixed;border-collapse:collapse;color:#fff;font-size:clamp(14px,2.2vw,22px)`;
+      const thS = `padding:12px 14px;background:#0d0d0d;border-bottom:2px solid rgba(255,255,255,0.35);font-weight:600`;
+
+      // フレックス方式: ヘッダー div は固定、ボディ div のみスクロール (sticky 不使用)
+      let html = `<div style="flex-shrink:0;background:#0d0d0d">
+        <table style="${tS}">${cg}<thead><tr>
+          <th style="${thS};text-align:left;padding-left:16px">配役</th>
+          <th style="${thS};text-align:left">項目</th>
+          <th style="${thS};text-align:right">得点</th>
+          <th style="${thS};text-align:center">成否</th>
+          <th style="${thS};text-align:right;padding-right:14px">獲得</th>
+        </tr></thead></table></div>`;
+
+      html += `<div id="score-body-container" style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:40px">
+        <table style="${tS}">${cg}<tbody>`;
 
       rows.forEach(({charName, items, total}) => {
         const gBorder = '2px solid rgba(255,255,255,0.25)';
         items.forEach((it, idx) => {
-          const rowBg     = idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
-          const cellBdr   = 'border-bottom:1px solid rgba(255,255,255,0.07)';
+          const rowBg   = idx % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
+          const cellBdr = 'border-bottom:1px solid rgba(255,255,255,0.07)';
           html += `<tr style="background:${rowBg}">`;
           if (idx === 0) {
             html += `<td rowspan="${items.length + 1}" style="padding:10px 16px;vertical-align:middle;text-align:center;font-weight:600;border-right:1px solid rgba(255,255,255,0.1);border-bottom:${gBorder}">${_esc(charName)}</td>`;
@@ -431,16 +439,16 @@
           html += `<td style="padding:9px 14px;text-align:right;${cellBdr};color:${acqColor}">${it.acquired}</td>`;
           html += '</tr>';
         });
-        // Total row — 配役 column is covered by rowspan, so 4 cells only
         html += `<tr style="background:rgba(255,255,255,0.07)">
           <td colspan="3" style="padding:9px 14px;text-align:right;font-size:0.85em;color:rgba(255,255,255,0.55);border-bottom:${gBorder}">合計</td>
           <td style="padding:9px 14px;text-align:right;font-weight:700;font-size:1.1em;border-bottom:${gBorder}">${total}</td>
         </tr>`;
       });
 
-      html += '</tbody></table>';
+      html += '</tbody></table></div>';
       container.innerHTML = html;
-      overlay.style.display = 'block';
+      container.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column';
+      overlay.style.display = 'flex';
     }
 
     function hideScoreTable() {
@@ -576,8 +584,8 @@
             else hideScoreTable();
             break;
           case 'score-scroll-delta': {
-            const so = document.getElementById('score-overlay');
-            if (so) so.scrollTop += data.dy;
+            const sb = document.getElementById('score-body-container');
+            if (sb) sb.scrollTop += data.dy;
             break;
           }
         }

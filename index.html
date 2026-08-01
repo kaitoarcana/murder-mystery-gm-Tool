@@ -1871,7 +1871,7 @@
 
 
 <!-- ================================================================ Main Score Overlay ================================================================ -->
-<div id="main-score-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.92);overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:clamp(16px,4vw,40px) clamp(12px,3vw,32px) 40px">
+<div id="main-score-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.92);flex-direction:column;padding:clamp(16px,4vw,40px) clamp(12px,3vw,32px) 0">
   <button onclick="hideMainScore()" style="position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:14px;z-index:601">✕ 閉じる</button>
   <div id="main-score-container" style="margin-top:10px"></div>
 </div>
@@ -2480,15 +2480,23 @@ function showMainScore(rows) {
   const container = qs('#main-score-container');
   if (!overlay || !container) return;
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const _sth = 'position:sticky;top:0;z-index:1;background:rgba(15,15,15,0.97);border-bottom:1px solid rgba(255,255,255,0.3)';
-  let html = `<table style="width:100%;border-collapse:separate;border-spacing:0;color:#fff;font-size:clamp(13px,2vw,18px)">
-    <thead><tr>
-      <th style="${_sth};padding:10px 14px;text-align:left">配役</th>
-      <th style="${_sth};padding:10px 12px;text-align:left">項目</th>
-      <th style="${_sth};padding:10px 12px;text-align:right">得点</th>
-      <th style="${_sth};padding:10px 12px;text-align:center">成否</th>
-      <th style="${_sth};padding:10px 12px;text-align:right">獲得</th>
-    </tr></thead><tbody>`;
+  const CW = ['13%','57%','10%','9%','11%'];
+  const cg = `<colgroup>${CW.map(w=>`<col style="width:${w}">`).join('')}</colgroup>`;
+  const tS = `width:100%;table-layout:fixed;border-collapse:collapse;color:#fff;font-size:clamp(13px,2vw,18px)`;
+  const thS = `padding:10px 12px;background:#0d0d0d;border-bottom:2px solid rgba(255,255,255,0.35);font-weight:600`;
+
+  // フレックス方式: ヘッダー div 固定、ボディ div のみスクロール
+  let html = `<div style="flex-shrink:0;background:#0d0d0d">
+    <table style="${tS}">${cg}<thead><tr>
+      <th style="${thS};text-align:left;padding-left:14px">配役</th>
+      <th style="${thS};text-align:left">項目</th>
+      <th style="${thS};text-align:right">得点</th>
+      <th style="${thS};text-align:center">成否</th>
+      <th style="${thS};text-align:right;padding-right:12px">獲得</th>
+    </tr></thead></table></div>`;
+
+  html += `<div id="main-score-body" style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding-bottom:40px">
+    <table style="${tS}">${cg}<tbody>`;
   rows.forEach(({charName, items, total}) => {
     const gBdr = '2px solid rgba(255,255,255,0.25)';
     items.forEach((it, idx) => {
@@ -2517,21 +2525,22 @@ function showMainScore(rows) {
       <td style="padding:8px 12px;text-align:right;font-weight:700;font-size:1.1em;border-bottom:${gBdr}">${total}</td>
     </tr>`;
   });
-  container.innerHTML = html + '</tbody></table>';
-  overlay.scrollTop = 0;
-  overlay.style.display = 'block';
-  // タッチのデルタ量をそのままフェイズウィンドウに転送（縦・横画面どちらでも対応）
-  if (!overlay._scrollInited) {
-    overlay._scrollInited = true;
+  container.innerHTML = html + '</tbody></table></div>';
+  container.style.cssText = 'flex:1;min-height:0;display:flex;flex-direction:column';
+  overlay.style.display = 'flex';
+
+  const bodyEl = container.querySelector('#main-score-body');
+  if (bodyEl) {
+    bodyEl.scrollTop = 0;
     let _lastY = null;
-    overlay.addEventListener('touchstart', (e) => { _lastY = e.touches[0].clientY; }, { passive: true });
-    overlay.addEventListener('touchmove', (e) => {
+    bodyEl.addEventListener('touchstart', (e) => { _lastY = e.touches[0].clientY; }, { passive: true });
+    bodyEl.addEventListener('touchmove', (e) => {
       if (_lastY === null) return;
       const dy = _lastY - e.touches[0].clientY;
       _lastY = e.touches[0].clientY;
       if (dy !== 0 && S.bc) S.bc.postMessage({ type: 'score-scroll-delta', dy });
     }, { passive: true });
-    overlay.addEventListener('touchend', () => { _lastY = null; }, { passive: true });
+    bodyEl.addEventListener('touchend', () => { _lastY = null; }, { passive: true });
   }
 }
 
