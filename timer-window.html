@@ -448,6 +448,10 @@
     }
 
     function playVideo({ url, autoClose = false, loop = false, startTime = 0, endTime = null }) {
+      // 再生中の動画がある場合は即座に停止してから新しい動画をロード
+      videoPlayer.pause();
+      videoPlayer.onended = null;
+      videoPlayer.ontimeupdate = null;
       _autoClose = autoClose;
       videoPlayer.loop = loop;
       videoPlayer.src = url;
@@ -518,6 +522,7 @@
             if ('bgUrl' in data) setBackground(data.bgUrl);
             break;
           case 'scene-image': {
+            closeVideo(); // 動画再生中でも即座に画像へ切り替え
             dbg('[URL直接] ' + (data.url||'').slice(0,60));
             setBackground(data.url, data.transition || 'instant');
             const _chk = new Image();
@@ -527,6 +532,7 @@
             break;
           }
           case 'scene-image-data': {
+            closeVideo(); // 動画再生中でも即座に画像へ切り替え
             dbg('[バイナリ受信] ' + Math.round(data.buffer.byteLength/1024) + 'KB / ' + (data.mime||'?'));
             const _blob = new Blob([data.buffer], { type: data.mime || 'image/jpeg' });
             const _blobUrl = URL.createObjectURL(_blob);
