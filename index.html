@@ -1071,6 +1071,7 @@
     <button class="btn-ghost" id="btn-record" style="font-size:12px" onclick="openModal('ov-record')">📋 記録</button>
     <button class="btn-ghost" id="btn-content" style="font-size:12px" onclick="openModal('ov-content')">📋 記録設定</button>
     <button class="btn-ghost" id="btn-judgment-result" style="font-size:12px" onclick="openJudgmentResult()">⚖ 判定</button>
+    <button class="btn-ghost" id="btn-cond-refresh" style="font-size:12px;display:none" onclick="doCondRefresh()" title="最新の判定結果でシーン・BGMパネル・GM資料を再描画（現在のBGMと画像はそのまま維持）">🔁 再描画</button>
     <button class="btn-ghost" id="btn-settings" style="font-size:12px">⚙ 設定</button>
     <a href="help-bgm.html" target="_blank"
        style="padding:5px 12px;text-decoration:none;font-size:12px;border-radius:6px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-dim);transition:all .15s;display:flex;align-items:center"
@@ -5906,6 +5907,20 @@ function applyCondPhase(ph) {
   updateOverlayPanel(null);
 }
 
+function updateCondRefreshBtn() {
+  const ph = getCur();
+  const show = S.mode === 'live' && !!(ph?.condMode);
+  const btn = qs('#btn-cond-refresh');
+  if (btn) btn.style.display = show ? '' : 'none';
+}
+
+function doCondRefresh() {
+  const ph = getCur();
+  if (!ph?.condMode) return;
+  applyCondPhase(ph);
+  notify('判定連動を再描画しました', 'info');
+}
+
 // ── Variant application ───────────────────────────────
 let S_overlayIdx = 0;
 
@@ -6752,6 +6767,7 @@ function selectPhase(i) {
     }
     updateOverlayPanel(null);
   }
+  updateCondRefreshBtn();
   renderChecklist();
   renderScenePanel();
 
@@ -6900,6 +6916,7 @@ function toggleMode() {
     if (ph) enterMasteringEditMode(ph);
   }
   applyMode();
+  updateCondRefreshBtn();
   renderChecklist();
   if (ph?.condMode) {
     applyCondPhase(ph);
