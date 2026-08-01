@@ -5120,7 +5120,9 @@ function buildCondValueInput(sec, rowId, colId, node, changeExpr) {
     </select>`;
   }
   if (ftype === 'select') {
-    const opts2 = (fdef?.options||'').split(',').map(o=>o.trim()).filter(Boolean);
+    const tableRow = (sec?.style === 'table') ? (sec.rows||[]).find(r => r.id === rowId) : null;
+    const rowOpts  = tableRow?.cellOptions?.[colId] || '';
+    const opts2 = (rowOpts || fdef?.options || '').split(',').map(o=>o.trim()).filter(Boolean);
     const optHtml = opts2.map(o =>
       `<option value="${escHtml(o)}"${cur===o?' selected':''}>${escHtml(o)}</option>`
     ).join('');
