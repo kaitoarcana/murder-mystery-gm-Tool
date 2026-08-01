@@ -2627,10 +2627,9 @@ function renderCondTreeHTML(node, ruleId, depth) {
   return `
     <div class="cond-group logic-${node.logic}" style="margin-left:${indent}px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span class="logic-badge ${node.logic}">${logicLabel}</span>
-        <button class="btn-ghost" onclick="condGroupToggleLogic('${ruleId}','${node.id}')" style="padding:1px 8px;font-size:11px">切替</button>
-        <button class="btn-ghost" onclick="condAddCond('${ruleId}','${node.id}')" style="padding:1px 8px;font-size:11px">＋ 条件</button>
+        <button class="logic-badge ${node.logic}" onclick="condGroupToggleLogic('${ruleId}','${node.id}')" style="cursor:pointer;border:none">${logicLabel}</button>
         <button class="btn-ghost" onclick="condAddGroup('${ruleId}','${node.id}')" style="padding:1px 8px;font-size:11px">＋ グループ</button>
+        <button class="btn-ghost" onclick="condAddCond('${ruleId}','${node.id}')" style="padding:1px 8px;font-size:11px">＋ 条件</button>
         ${depth > 0 ? `<button class="btn-ghost" onclick="condRemoveNode('${ruleId}','${node.id}')" style="padding:1px 6px;font-size:11px;color:var(--red)">✕</button>` : ''}
       </div>
       ${childrenHtml}
