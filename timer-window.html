@@ -568,6 +568,11 @@
             if (data.visible) showScoreTable(data.rows || []);
             else hideScoreTable();
             break;
+          case 'score-scroll': {
+            const so = document.getElementById('score-overlay');
+            if (so) so.scrollTop = data.top;
+            break;
+          }
         }
       };
     } catch(e) {}

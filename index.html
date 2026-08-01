@@ -2442,6 +2442,15 @@ function showMainScore(rows) {
   container.innerHTML = html + '</tbody></table>';
   overlay.scrollTop = 0;
   overlay.style.display = 'block';
+  // スクロール位置をフェイズウィンドウに同期
+  let _scrollRaf = null;
+  overlay.onscroll = () => {
+    if (_scrollRaf) return;
+    _scrollRaf = requestAnimationFrame(() => {
+      _scrollRaf = null;
+      if (S.bc) S.bc.postMessage({ type: 'score-scroll', top: overlay.scrollTop });
+    });
+  };
 }
 
 function hideMainScore() {
