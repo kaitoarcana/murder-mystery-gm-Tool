@@ -2480,13 +2480,14 @@ function showMainScore(rows) {
   const container = qs('#main-score-container');
   if (!overlay || !container) return;
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const _sth = 'position:sticky;top:0;z-index:1;background:rgba(15,15,15,0.97);border-bottom:1px solid rgba(255,255,255,0.3)';
   let html = `<table style="width:100%;border-collapse:collapse;color:#fff;font-size:clamp(13px,2vw,18px)">
-    <thead><tr style="background:rgba(255,255,255,0.1)">
-      <th style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.2)">配役</th>
-      <th style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.2)">項目</th>
-      <th style="padding:10px 12px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.2)">得点</th>
-      <th style="padding:10px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.2)">成否</th>
-      <th style="padding:10px 12px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.2)">獲得</th>
+    <thead><tr>
+      <th style="${_sth};padding:10px 14px;text-align:left">配役</th>
+      <th style="${_sth};padding:10px 12px;text-align:left">項目</th>
+      <th style="${_sth};padding:10px 12px;text-align:right">得点</th>
+      <th style="${_sth};padding:10px 12px;text-align:center">成否</th>
+      <th style="${_sth};padding:10px 12px;text-align:right">獲得</th>
     </tr></thead><tbody>`;
   rows.forEach(({charName, items, total}) => {
     const gBdr = '2px solid rgba(255,255,255,0.25)';
