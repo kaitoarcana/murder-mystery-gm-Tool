@@ -1719,7 +1719,7 @@
 
 <!-- ================================================================ Content Settings Modal (characters + record forms) ================================================================ -->
 <div class="overlay hidden" id="ov-content">
-  <div class="modal" style="width:860px">
+  <div class="modal" style="width:940px">
     <div class="modal-hd">
       <h2>📋 記録設定</h2>
       <button class="modal-close" data-close="ov-content">✕</button>
@@ -1727,6 +1727,7 @@
     <div class="mtabs">
       <button class="mtab active" data-tab="cv-characters">👥 キャラクター</button>
       <button class="mtab" data-tab="cv-record-forms">📋 記録フォーム</button>
+      <button class="mtab" data-tab="cv-judgment">⚖ 判定設定</button>
       <button class="mtab" data-tab="cv-scoring-missions">🏆 得点ミッション</button>
     </div>
     <div class="modal-body">
@@ -1744,6 +1745,10 @@
         <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px">本番中に記録するデータの構造を定義します。ドラッグで並び替え可能です。</div>
         <div id="record-section-list" style="margin-bottom:12px"></div>
         <button class="btn-ghost" onclick="addRecordSection()" style="font-size:12px;width:100%">＋ セクションを追加</button>
+      </div>
+      <div class="mtab-content" id="cv-judgment">
+        <div id="judgment-setup-body"></div>
+        <button class="btn-ghost" onclick="jSecAdd()" style="font-size:12px;width:100%;margin-top:8px">＋ セクションを追加</button>
       </div>
       <div class="mtab-content" id="cv-scoring-missions">
         <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px">各キャラクターのミッション達成状況に応じて得点を計算します。条件は記録値または判定結果を参照できます。</div>
@@ -1798,20 +1803,6 @@
   </div>
 </div>
 
-<!-- ================================================================ Judgment Setup Modal ================================================================ -->
-<div class="overlay hidden" id="ov-judgment-setup">
-  <div class="modal" style="width:940px">
-    <div class="modal-hd">
-      <h2>⚖ 判定設定</h2>
-      <button class="modal-close" data-close="ov-judgment-setup">✕</button>
-    </div>
-    <div class="modal-body" id="judgment-setup-body"></div>
-    <div class="modal-ft">
-      <button class="btn-ghost" onclick="jSecAdd()">＋ セクションを追加</button>
-      <button class="btn-ghost" data-close="ov-judgment-setup">閉じる</button>
-    </div>
-  </div>
-</div>
 
 <!-- ================================================================ Judgment Result Modal ================================================================ -->
 <div class="overlay hidden" id="ov-judgment-result">
@@ -3469,8 +3460,11 @@ function resolveCondNotes(ph, jResults) {
 
 // ── Open modals ───────────────────────────────────────
 function openJudgmentSetup() {
-  renderJudgmentSetupModal();
-  openModal('ov-judgment-setup');
+  openModal('ov-content');
+  qsa('.mtab').forEach(x => x.classList.remove('active'));
+  qsa('.mtab-content').forEach(x => x.classList.remove('active'));
+  qs('[data-tab="cv-judgment"]')?.classList.add('active');
+  qs('#cv-judgment')?.classList.add('active');
 }
 
 function openJudgmentResult() {
@@ -6305,7 +6299,7 @@ function openModal(id) {
     enumAudioDevices();
     loadDisplaySettingsUI();
   }
-  if (id === 'ov-content') { renderCharacterSettings(); renderRecordSectionList(); renderScoringMissions(); }
+  if (id === 'ov-content') { renderCharacterSettings(); renderRecordSectionList(); renderJudgmentSetupModal(); renderScoringMissions(); }
   if (id === 'ov-record')        renderRecordPanel();
 }
 function closeModal(id) {
