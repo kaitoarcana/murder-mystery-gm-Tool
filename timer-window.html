@@ -160,6 +160,13 @@
   </div>
 
   <div id="esc-hint">ESC で全画面終了</div>
+
+  <!-- 全画面誘導オーバーレイ (出力先選択後に表示) -->
+  <div id="fs-prompt" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,0.75);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:#fff">
+    <div style="font-size:56px;line-height:1">🖥</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:0.04em">クリックして全画面表示</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.55)">どこでもクリックで全画面になります</div>
+  </div>
   <div id="dbg-toast"></div>
 
   <div id="controls">
@@ -589,7 +596,7 @@
             break;
           }
           case 'request-fullscreen':
-            document.documentElement.requestFullscreen().catch(() => {});
+            showFsPrompt();
             break;
         }
       };
@@ -626,11 +633,22 @@
     })();
 
     // ── Init ──
+    // ── 全画面誘導プロンプト ──
+    function showFsPrompt() {
+      const el = document.getElementById('fs-prompt');
+      if (!el) return;
+      el.style.display = 'flex';
+      el.addEventListener('click', () => {
+        el.style.display = 'none';
+        document.documentElement.requestFullscreen().catch(() => {});
+      }, { once: true });
+    }
+
     applySettings(settings);
 
-    // ── 出力先選択で開いた場合は自動全画面 ──
+    // ── 出力先選択で開いた場合は全画面誘導プロンプトを表示 ──
     if (new URLSearchParams(window.location.search).get('autoFS') === '1') {
-      document.documentElement.requestFullscreen().catch(() => {});
+      showFsPrompt();
     }
   </script>
 </body>
