@@ -588,6 +588,9 @@
             if (sb) sb.scrollTop += data.dy;
             break;
           }
+          case 'request-fullscreen':
+            document.documentElement.requestFullscreen().catch(() => {});
+            break;
         }
       };
     } catch(e) {}
@@ -624,6 +627,11 @@
 
     // ── Init ──
     applySettings(settings);
+
+    // ── 出力先選択で開いた場合は自動全画面 ──
+    if (new URLSearchParams(window.location.search).get('autoFS') === '1') {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
   </script>
 </body>
 </html>

@@ -6448,9 +6448,9 @@ function drumSyncPhaseModal(min, sec) {
 // ═══════════════════════════════════════════════════════
 function bindAll() {
   qs('#btn-mode').onclick     = toggleMode;
-  qs('#btn-open-timer').onclick = openTimerWin;
+  qs('#btn-open-timer').onclick = toggleTimerWin;
   qs('#btn-settings').onclick = () => openModal('ov-settings');
-  qs('#btn-open-sub').onclick = openTimerWin;
+  qs('#btn-open-sub').onclick = toggleTimerWin;
   qs('#phase-add-tab').onclick = phaseAddNew;
 
   qs('#btn-start').onclick = timerStart;
@@ -7079,22 +7079,40 @@ function showScreenPickModal(screens) {
 function _openTimerWinRaw(screen) {
   if (screen) {
     if (S.subWin && !S.subWin.closed) {
-      // ウィンドウが開いている場合は移動を試みる
       try {
         S.subWin.moveTo(screen.availLeft, screen.availTop);
         S.subWin.resizeTo(screen.availWidth, screen.availHeight);
         S.subWin.focus();
+        // 移動後に全画面要求
+        setTimeout(() => { if (S.bc) S.bc.postMessage({ type: 'request-fullscreen' }); }, 200);
+        updateTimerWinBtn();
         return;
-      } catch(e) { /* moveTo失敗時は閉じて開き直す */ }
+      } catch(e) {}
     }
     if (S.subWin && !S.subWin.closed) S.subWin.close();
     const f = `left=${screen.availLeft},top=${screen.availTop},width=${screen.availWidth},height=${screen.availHeight}`;
-    S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', f);
+    S.subWin = window.open('timer-window.html?v=' + Date.now() + '&autoFS=1', 'gm-timer-win', f);
   } else {
-    if (S.subWin && !S.subWin.closed) { S.subWin.focus(); return; }
+    if (S.subWin && !S.subWin.closed) { S.subWin.focus(); updateTimerWinBtn(); return; }
     S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', 'width=900,height=560,resizable=yes');
   }
-  setTimeout(() => { broadcastTimer(); broadcastDisplay(); }, 900);
+  setTimeout(() => { broadcastTimer(); broadcastDisplay(); updateTimerWinBtn(); }, 900);
+}
+
+function toggleTimerWin() {
+  if (S.subWin && !S.subWin.closed) {
+    S.subWin.close();
+    S.subWin = null;
+    updateTimerWinBtn();
+  } else {
+    openTimerWin();
+  }
+}
+
+function updateTimerWinBtn() {
+  const isOpen = !!(S.subWin && !S.subWin.closed);
+  const btn = qs('#btn-open-sub');
+  if (btn) btn.textContent = isOpen ? '📺 フェイズウィンドウを閉じる' : '📺 フェイズウィンドウを開く';
 }
 
 function _ensureTimerWin(callback) {
