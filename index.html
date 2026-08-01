@@ -1023,10 +1023,34 @@
     body.portrait-mode #panel-timer {
       grid-column: 1; grid-row: 1;
       border-bottom: 1px solid var(--border);
-      max-height: 55vh;
+      overflow-y: auto;
     }
     body.portrait-mode #panel-bgm  { grid-column: 1; grid-row: 2; }
-    body.portrait-mode #panel-notes { grid-column: 2; grid-row: 1 / span 2; }
+    body.portrait-mode #panel-notes { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; }
+
+    /* 縦画面: タイマー数字を小さく */
+    body.portrait-mode #time-display { font-size: 52px; letter-spacing: 3px; }
+    body.portrait-mode .timer-box { padding: 10px 0 14px; }
+
+    /* 縦画面: タイマーパネルからdur-rowと余分ボタンを非表示 */
+    body.portrait-mode #panel-timer .dur-row { display: none; }
+    body.portrait-mode #panel-timer #btn-open-sub { display: none; }
+    body.portrait-mode #panel-timer #btn-phase-display { display: none; }
+    body.portrait-mode #panel-timer #btn-cond-phase { display: none; }
+    body.portrait-mode #panel-timer #btn-score-display { display: none; }
+
+    /* 縦画面: 時間設定ボタン（デフォルト非表示、portrait時に表示） */
+    #btn-portrait-time-settings { display: none; }
+    body.portrait-mode #btn-portrait-time-settings { display: flex; justify-content: center; align-items: center; }
+
+    /* 縦画面: BGMパネルの追加ボタン（デフォルト非表示） */
+    #portrait-bgm-btns { display: none; }
+    body.portrait-mode #portrait-bgm-btns { display: flex; flex-direction: column; gap: 6px; }
+
+    /* 縦画面: GM資料上のNowPlayingエリア（デフォルト非表示） */
+    #portrait-np-area { display: none; flex-direction: column; gap: 8px;
+      flex-shrink: 0; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    body.portrait-mode #portrait-np-area { display: flex; }
   </style>
 </head>
 <body>
@@ -1076,6 +1100,7 @@
       <button class="btn-yellow" id="btn-pause" disabled>⏸ 停止</button>
       <button class="btn-ghost"  id="btn-reset">↺ リセット</button>
     </div>
+    <button class="btn-ghost" id="btn-portrait-time-settings" onclick="openPortraitTimeModal()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">⏱ 時間設定</button>
     <div class="dur-row">
       <label>このフェイズの時間を変更</label>
       <div class="drum-picker">
@@ -1108,6 +1133,12 @@
     <!-- Sticky top: title + Now Playing + volume -->
     <div class="bgm-sticky-top">
       <div class="section-title" style="padding-bottom:0;border-bottom:none;margin-bottom:0">BGM &amp; 効果音</div>
+
+      <!-- 縦画面のみ表示: 判定連動・得点表示ボタン -->
+      <div id="portrait-bgm-btns">
+        <button class="btn-ghost" onclick="document.getElementById('btn-cond-phase').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">🔀 判定連動設定</button>
+        <button class="btn-ghost" onclick="document.getElementById('btn-score-display').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">📊 得点表示</button>
+      </div>
 
       <!-- Now Playing bar — always visible -->
       <div id="now-playing" class="now-playing idle">
@@ -1170,6 +1201,9 @@
 
   <!-- ■ Notes Panel -->
   <div class="panel" id="panel-notes">
+    <!-- 縦画面: GM資料上部のNow Playingエリア (JSで#now-playingと.vol-rowを移動) -->
+    <div id="portrait-np-area"></div>
+
     <!-- テキストオーバーレイ操作パネル (エンディングフェイズ・ライブモード時のみ表示) -->
     <div id="overlay-panel" style="display:none;flex-direction:column"></div>
 
@@ -1835,6 +1869,17 @@
 <div id="main-score-overlay" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.92);overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:clamp(16px,4vw,40px) clamp(12px,3vw,32px) 40px">
   <button onclick="hideMainScore()" style="position:fixed;top:16px;right:16px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:14px;z-index:601">✕ 閉じる</button>
   <div id="main-score-container" style="margin-top:10px"></div>
+</div>
+
+<!-- 縦画面: タイマー時間設定モーダル -->
+<div id="portrait-time-modal" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;">
+  <div style="background:var(--bg-0);border:1px solid var(--border);border-radius:12px;padding:20px 20px 24px;width:min(90vw,360px);box-shadow:0 8px 32px var(--shadow-deep)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-weight:600;font-size:14px">タイマー時間設定</span>
+      <button onclick="closePortraitTimeModal()" style="border:none;background:none;cursor:pointer;font-size:22px;line-height:1;color:var(--text-dim);padding:2px 6px">✕</button>
+    </div>
+    <div id="portrait-time-modal-body"></div>
+  </div>
 </div>
 
 <!-- ================================================================ Numpad Modal ================================================================ -->
@@ -8198,11 +8243,48 @@ function notify(msg, type = '') {
       btn.style.color       = on ? 'var(--accent)'     : 'var(--text-dim)';
       btn.style.borderStyle = on ? 'solid'             : 'dashed';
     }
+    // Now Playing + 音量スライダーをノートパネル上部 ↔ BGMパネルへ移動
+    const npArea = document.getElementById('portrait-np-area');
+    const bgmSticky = document.querySelector('.bgm-sticky-top');
+    const nowPlaying = document.getElementById('now-playing');
+    const volRow = document.querySelector('.vol-row');
+    if (npArea && bgmSticky && nowPlaying && volRow) {
+      if (on) {
+        npArea.appendChild(nowPlaying);
+        npArea.appendChild(volRow);
+      } else {
+        // 横画面に戻す: BGM sticky-top の末尾に戻す
+        bgmSticky.appendChild(nowPlaying);
+        bgmSticky.appendChild(volRow);
+        closePortraitTimeModal();
+      }
+    }
   }
   mq.addEventListener('change', apply);
   apply();
   window.togglePortraitDebug = function() { _forced = !_forced; apply(); };
 })();
+
+function openPortraitTimeModal() {
+  const modal = document.getElementById('portrait-time-modal');
+  const body  = document.getElementById('portrait-time-modal-body');
+  const durRow = document.querySelector('.dur-row');
+  if (!modal || !body || !durRow) return;
+  body.appendChild(durRow);  // dur-rowをモーダル内に移動（portrait CSS除外でそのまま表示）
+  modal.style.display = 'flex';
+}
+
+function closePortraitTimeModal() {
+  const modal = document.getElementById('portrait-time-modal');
+  if (!modal || modal.style.display === 'none') return;
+  const durRow = document.querySelector('.dur-row');
+  const timerPanel = document.getElementById('panel-timer');
+  const btnOpenSub = document.getElementById('btn-open-sub');
+  if (durRow && timerPanel && btnOpenSub) {
+    timerPanel.insertBefore(durRow, btnOpenSub);  // タイマーパネルの元の位置に戻す
+  }
+  modal.style.display = 'none';
+}
 </script>
 
 <!-- Floating table toolbar (position:fixed, shown when cursor is inside a table cell) -->
