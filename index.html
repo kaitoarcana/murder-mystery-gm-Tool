@@ -1013,6 +1013,20 @@
     }
     .jsec-mode-badge.rule   { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-glow); }
     .jsec-mode-badge.direct { background: var(--green-6); color: var(--green); border-color: var(--green-35); }
+
+    /* ── 縦画面モード (body.portrait-mode クラスで適用) ──
+       左列(300px)はそのまま。タイマー＋BGMを縦積み、右側にGM資料が広がる。 */
+    body.portrait-mode #main {
+      grid-template-columns: 300px 1fr;
+      grid-template-rows: auto 1fr;
+    }
+    body.portrait-mode #panel-timer {
+      grid-column: 1; grid-row: 1;
+      border-bottom: 1px solid var(--border);
+      max-height: 55vh;
+    }
+    body.portrait-mode #panel-bgm  { grid-column: 1; grid-row: 2; }
+    body.portrait-mode #panel-notes { grid-column: 2; grid-row: 1 / span 2; }
   </style>
 </head>
 <body>
@@ -1022,6 +1036,7 @@
   <div id="scenario-display">シナリオ未設定</div>
   <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
   <div class="hdr-btn">
+    <button id="btn-portrait-toggle" onclick="togglePortraitDebug()" title="縦画面テスト（デバッグ用）" style="font-size:11px;padding:4px 9px;border:1px dashed var(--border-h);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">🔄 縦</button>
     <button id="btn-theme" title="ライト/ダーク切り替え">☀</button>
     <button id="btn-mode" class="mastering">📝 マスタリング</button>
     <button class="btn-ghost" id="btn-open-timer" style="font-size:12px">📺 フェイズ画面</button>
@@ -8169,6 +8184,25 @@ function notify(msg, type = '') {
   if (notifTimer) clearTimeout(notifTimer);
   notifTimer = setTimeout(() => { el.className = ''; }, 3000);
 }
+
+// ── 縦画面モード: 実機回転 or デバッグボタンで portrait-mode クラスを付与 ──
+(function() {
+  const mq = window.matchMedia('(orientation: portrait)');
+  let _forced = false;
+  function apply() {
+    const on = mq.matches || _forced;
+    document.body.classList.toggle('portrait-mode', on);
+    const btn = document.getElementById('btn-portrait-toggle');
+    if (btn) {
+      btn.style.background  = on ? 'var(--accent-dim)' : 'transparent';
+      btn.style.color       = on ? 'var(--accent)'     : 'var(--text-dim)';
+      btn.style.borderStyle = on ? 'solid'             : 'dashed';
+    }
+  }
+  mq.addEventListener('change', apply);
+  apply();
+  window.togglePortraitDebug = function() { _forced = !_forced; apply(); };
+})();
 </script>
 
 <!-- Floating table toolbar (position:fixed, shown when cursor is inside a table cell) -->
