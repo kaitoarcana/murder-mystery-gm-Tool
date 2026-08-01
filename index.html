@@ -1931,6 +1931,23 @@
   </div>
 </div>
 
+<!-- ディスプレイ選択モーダル -->
+<div class="overlay hidden" id="ov-screen-pick">
+  <div class="modal" style="width:min(90vw,600px)">
+    <div class="modal-hd">
+      <h2>🖥 フェイズウィンドウの表示先</h2>
+      <button class="modal-close" data-close="ov-screen-pick">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:18px">表示するディスプレイを選んでください。ウィンドウが開いている場合はそのディスプレイへ移動します。</div>
+      <div id="screen-pick-list" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-ghost" data-close="ov-screen-pick">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <div id="notif"></div>
 <script>
 'use strict';
@@ -2455,12 +2472,7 @@ function broadcastScoreTable() {
   if (!rows.length) { notify('得点ミッションが設定されていません', 'warn'); return; }
   showMainScore(rows);
   const send = () => S.bc.postMessage({ type: 'score-table', rows, visible: true });
-  if (!S.subWin || S.subWin.closed) {
-    S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', 'width=900,height=560,resizable=yes');
-    setTimeout(send, 900);
-  } else {
-    send();
-  }
+  _ensureTimerWin(send);
 }
 
 function showMainScore(rows) {
@@ -7015,13 +7027,70 @@ function broadcastTimer() {
 // ═══════════════════════════════════════════════════════
 // Timer Sub Window
 // ═══════════════════════════════════════════════════════
-function openTimerWin() {
-  if (S.subWin && !S.subWin.closed) { S.subWin.focus(); return; }
+async function openTimerWin() {
+  if (!('getScreenDetails' in window)) {
+    _openTimerWinRaw(null); return;
+  }
+  let sd;
+  try { sd = await window.getScreenDetails(); } catch(e) {
+    _openTimerWinRaw(null); return;   // 権限拒否 → デフォルト動作
+  }
+  if (sd.screens.length <= 1) {
+    _openTimerWinRaw(sd.screens[0] || null); return;
+  }
+  showScreenPickModal(sd.screens);  // 複数ディスプレイ → 選択モーダル
+}
+
+function showScreenPickModal(screens) {
+  const list = qs('#screen-pick-list');
+  list.innerHTML = '';
+  // プライマリを先頭に、あとは left 座標でソート
+  const sorted = [...screens].sort((a, b) =>
+    (b.isPrimary - a.isPrimary) || (a.left - b.left));
+  sorted.forEach((s, i) => {
+    const label = s.label?.trim() || `ディスプレイ ${i + 1}`;
+    const card = document.createElement('button');
+    card.className = 'btn-ghost';
+    card.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 20px;min-width:150px;flex:1;max-width:200px;cursor:pointer';
+    card.innerHTML =
+      `<div style="font-size:36px;line-height:1">🖥</div>` +
+      `<div style="font-size:13px;font-weight:600;text-align:center;word-break:break-word">${label}</div>` +
+      `<div style="font-size:11px;color:var(--text-dim)">${s.width}×${s.height}</div>` +
+      `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;min-height:18px">` +
+        (s.isPrimary ? `<span style="font-size:10px;background:var(--accent-dim);color:var(--accent);padding:2px 7px;border-radius:10px">プライマリ</span>` : '') +
+        (s.isInternal ? `<span style="font-size:10px;background:var(--bg-3);color:var(--text-dim);padding:2px 7px;border-radius:10px">内蔵</span>` : '') +
+      `</div>`;
+    card.onclick = () => { closeModal('ov-screen-pick'); _openTimerWinRaw(s); };
+    list.appendChild(card);
+  });
+  openModal('ov-screen-pick');
+}
+
+function _openTimerWinRaw(screen) {
+  if (screen) {
+    if (S.subWin && !S.subWin.closed) {
+      // ウィンドウが開いている場合は移動を試みる
+      try {
+        S.subWin.moveTo(screen.availLeft, screen.availTop);
+        S.subWin.resizeTo(screen.availWidth, screen.availHeight);
+        S.subWin.focus();
+        return;
+      } catch(e) { /* moveTo失敗時は閉じて開き直す */ }
+    }
+    if (S.subWin && !S.subWin.closed) S.subWin.close();
+    const f = `left=${screen.availLeft},top=${screen.availTop},width=${screen.availWidth},height=${screen.availHeight}`;
+    S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', f);
+  } else {
+    if (S.subWin && !S.subWin.closed) { S.subWin.focus(); return; }
+    S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', 'width=900,height=560,resizable=yes');
+  }
+  setTimeout(() => { broadcastTimer(); broadcastDisplay(); }, 900);
+}
+
+function _ensureTimerWin(callback) {
+  if (S.subWin && !S.subWin.closed) { callback(); return; }
   S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', 'width=900,height=560,resizable=yes');
-  setTimeout(() => {
-    broadcastTimer();
-    broadcastDisplay();
-  }, 900);
+  setTimeout(callback, 900);
 }
 
 // ═══════════════════════════════════════════════════════
