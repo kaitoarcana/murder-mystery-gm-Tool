@@ -4540,21 +4540,26 @@ function renderRowRulesEditor(body, sec, row) {
         <input type="text" class="form-control-sm" value="${escHtml(m.fillValue||'')}" placeholder="自動入力値…" style="flex:1" onchange="autoFillUpdateMappingRow('${sec.id}','${row.id}','${rule.id}',${mi},'fillValue',this.value)">
         <button class="btn-ghost" onclick="autoFillRemoveMappingRow('${sec.id}','${row.id}','${rule.id}',${mi})" style="padding:2px 6px;font-size:11px">✕</button>
       </div>`).join('');
+    const hasTrigger = !!rule.triggerColId;
+    const targetSel = hasTrigger
+      ? `<select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRuleRow('${sec.id}','${row.id}','${rule.id}','targetColId',this.value)"><option value="">── 選択 ──</option>${colOpts(rule.targetColId||'')}</select>`
+      : `<select class="form-control-sm" style="flex:1;min-width:100px" disabled><option value="">── 選択 ──</option></select>`;
+    const mappingArea = hasTrigger
+      ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">入力値 → 自動入力値</div>
+         ${mappingsHtml||'<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">マッピングが登録されていません</div>'}
+         <button class="btn-ghost" onclick="autoFillAddMappingRow('${sec.id}','${row.id}','${rule.id}')" style="font-size:11px">＋ マッピングを追加</button>`
+      : `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">── マッピングなし ──</div>`;
     return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
         <span style="font-size:12px;flex-shrink:0">トリガー列:</span>
         <select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRuleRow('${sec.id}','${row.id}','${rule.id}','triggerColId',this.value)">
-          <option value="">選択…</option>${colOpts(rule.triggerColId||'')}
+          <option value="">── 選択 ──</option>${colOpts(rule.triggerColId||'')}
         </select>
         <span style="font-size:12px;flex-shrink:0">→ 対象列:</span>
-        <select class="form-control-sm" style="flex:1;min-width:100px" onchange="autoFillUpdateRuleRow('${sec.id}','${row.id}','${rule.id}','targetColId',this.value)">
-          <option value="">選択…</option>${colOpts(rule.targetColId||'')}
-        </select>
+        ${targetSel}
         <button class="btn-ghost" onclick="autoFillRemoveRuleRow('${sec.id}','${row.id}','${rule.id}')" style="padding:2px 6px;font-size:11px;color:var(--red);flex-shrink:0">ルール削除</button>
       </div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">入力値 → 自動入力値</div>
-      ${mappingsHtml||'<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">マッピングが登録されていません</div>'}
-      <button class="btn-ghost" onclick="autoFillAddMappingRow('${sec.id}','${row.id}','${rule.id}')" style="font-size:11px">＋ マッピングを追加</button>
+      ${mappingArea}
     </div>`;
   }).join('');
   body.innerHTML = `
