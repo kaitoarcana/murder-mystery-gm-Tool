@@ -1064,7 +1064,6 @@
   <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
   <div class="hdr-btn">
     <button id="btn-portrait-toggle" onclick="togglePortraitDebug()" title="縦画面テスト（デバッグ用）" style="font-size:11px;padding:4px 9px;border:1px dashed var(--border-h);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">🔄 縦</button>
-    <button id="btn-fullscreen" onclick="toggleMainFullscreen()" title="全画面表示（F11相当）" style="font-size:11px;padding:4px 9px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">⛶ 全画面</button>
     <button id="btn-theme" title="ライト/ダーク切り替え">☀</button>
     <button id="btn-mode" class="mastering">📝 マスタリング</button>
     <button class="btn-ghost" id="btn-open-timer" style="font-size:12px">📺 フェイズ画面</button>
@@ -1319,6 +1318,16 @@
     </div>
 
     <div class="mtab-content" id="t-display">
+      <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:2px">全画面表示</div>
+          <div style="font-size:11px;color:var(--text-dim)">ブラウザのタブ・アドレスバーを非表示にして誤操作を防止</div>
+        </div>
+        <button id="btn-fullscreen" onclick="closeModal('ov-settings');toggleMainFullscreen()"
+          style="min-width:110px;padding:8px 16px;font-size:13px;font-weight:600;border:1px solid var(--border);border-radius:8px;background:var(--bg-2);color:var(--text);cursor:pointer;transition:all .15s;flex-shrink:0">
+          ⛶ 全画面にする
+        </button>
+      </div>
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px">
         フェイズウィンドウの見た目を設定します。フェイズごとに上書きが可能です。
       </div>
@@ -8420,11 +8429,11 @@ document.addEventListener('fullscreenchange', () => {
   const btn = qs('#btn-fullscreen');
   if (!btn) return;
   if (document.fullscreenElement) {
-    btn.textContent = '⛶ 全画面解除';
-    btn.title = '全画面を解除';
+    btn.textContent = '⛶ 全画面を解除';
+    btn.onclick = () => { closeModal('ov-settings'); toggleMainFullscreen(); };
   } else {
-    btn.textContent = '⛶ 全画面';
-    btn.title = '全画面表示（F11相当）';
+    btn.textContent = '⛶ 全画面にする';
+    btn.onclick = () => { closeModal('ov-settings'); toggleMainFullscreen(); };
   }
 });
 
