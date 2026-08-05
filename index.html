@@ -6920,10 +6920,14 @@ function applyMode() {
   hideTableToolbar();
 }
 
+// 本番モード中のうっかりブラウザ閉じを防ぐ beforeunload ガード
+function _liveGuard(e) { e.preventDefault(); e.returnValue = ''; }
+
 function toggleMode() {
   const ph = getCur();
   if (S.mode === 'mastering') {
     S.mode = 'live';
+    window.addEventListener('beforeunload', _liveGuard);
     initCheckState(); // ゲーム開始 → チェックリストをリセット
     exitMasteringEditMode();
     if (ph && !ph.condMode) {
@@ -6931,6 +6935,7 @@ function toggleMode() {
     }
   } else {
     S.mode = 'mastering';
+    window.removeEventListener('beforeunload', _liveGuard);
     if (S.audio.current) fadeAndStopCurrent(null);
     timerClear();
     if (S.timer.state === 'running') { S.timer.state = 'stopped'; updateTimerUI(); }
