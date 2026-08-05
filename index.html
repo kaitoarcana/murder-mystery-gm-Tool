@@ -1064,6 +1064,7 @@
   <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
   <div class="hdr-btn">
     <button id="btn-portrait-toggle" onclick="togglePortraitDebug()" title="縦画面テスト（デバッグ用）" style="font-size:11px;padding:4px 9px;border:1px dashed var(--border-h);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">🔄 縦</button>
+    <button id="btn-fullscreen" onclick="toggleMainFullscreen()" title="全画面表示（F11相当）" style="font-size:11px;padding:4px 9px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">⛶ 全画面</button>
     <button id="btn-theme" title="ライト/ダーク切り替え">☀</button>
     <button id="btn-mode" class="mastering">📝 マスタリング</button>
     <button class="btn-ghost" id="btn-open-timer" style="font-size:12px">📺 フェイズ画面</button>
@@ -8405,6 +8406,27 @@ function notify(msg, type = '') {
   apply();
   window.togglePortraitDebug = function() { _forced = !_forced; apply(); };
 })();
+
+function toggleMainFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+// 全画面状態の変化でボタンラベルを更新
+document.addEventListener('fullscreenchange', () => {
+  const btn = qs('#btn-fullscreen');
+  if (!btn) return;
+  if (document.fullscreenElement) {
+    btn.textContent = '⛶ 全画面解除';
+    btn.title = '全画面を解除';
+  } else {
+    btn.textContent = '⛶ 全画面';
+    btn.title = '全画面表示（F11相当）';
+  }
+});
 
 function openPortraitTimeModal() {
   const modal = document.getElementById('portrait-time-modal');
