@@ -3393,9 +3393,11 @@ function getJudgmentFieldValue(secId, rowId, colId) {
   return String(rawVal);
 }
 
-// gameRecord にプリセット値（row.cells）を補完したビューを返す
-// テーブル型セルは一度も操作していない場合 gameRecord が空だが、
-// 画面はプリセット値を表示するため、判定評価でも同じ値を使う必要がある
+// 判定評価用に「画面表示と同じ有効値」を返すレコードビューを構築する
+// ① テーブル型: 未記録セルにプリセット値(row.cells)を補完
+// ② フォーム型 toggle: 未操作(undefined)は OFF(false)として扱う
+//    条件の cond.value は "true"/"false" 文字列で保存されるため、
+//    String(false)="false" がそのまま比較に使われる。ラベルへの変換は不要。
 function buildEffectiveRecord() {
   const base = S.scenario.gameRecord || {};
   const merged = {};
@@ -3407,18 +3409,31 @@ function buildEffectiveRecord() {
       merged[secId][rowId] = (rv && typeof rv === 'object') ? { ...rv } : rv;
     }
   }
-  // テーブル型のプリセット値を未記録セルに補完
+
   for (const sec of (S.scenario.recordSections || [])) {
-    if (sec.style !== 'table') continue;
-    for (const row of (sec.rows || [])) {
-      for (const col of (sec.columns || [])) {
-        const preset = row.cells?.[col.id];
-        if (preset === undefined || preset === null) continue;
-        const liveVal = merged[sec.id]?.[row.id]?.[col.id];
+    if (sec.style === 'table') {
+      // テーブル型: 未記録セルにプリセット値を補完（boolean はそのまま保持）
+      for (const row of (sec.rows || [])) {
+        for (const col of (sec.columns || [])) {
+          const preset = row.cells?.[col.id];
+          if (preset === undefined || preset === null) continue;
+          const liveVal = merged[sec.id]?.[row.id]?.[col.id];
+          if (liveVal !== undefined && liveVal !== null) continue;
+          if (!merged[sec.id]) merged[sec.id] = {};
+          if (!merged[sec.id][row.id]) merged[sec.id][row.id] = {};
+          merged[sec.id][row.id][col.id] = preset;
+        }
+      }
+    } else {
+      // フォーム型: toggle の未設定値を false(OFF)で補完
+      // recordToggle は true/false を保存し、evalCondition は String() で比較するため
+      // undefined のままだと String(undefined ?? '')="" となり条件が一致しない
+      for (const row of (sec.rows || [])) {
+        if (row.isHeader || row.valueType !== 'toggle') continue;
+        const liveVal = merged[sec.id]?.[row.id];
         if (liveVal !== undefined && liveVal !== null) continue;
         if (!merged[sec.id]) merged[sec.id] = {};
-        if (!merged[sec.id][row.id]) merged[sec.id][row.id] = {};
-        merged[sec.id][row.id][col.id] = preset;
+        merged[sec.id][row.id] = false;
       }
     }
   }
