@@ -172,16 +172,13 @@
       padding: 14px 18px;
       display: flex; align-items: center; gap: 14px; flex-shrink: 0;
     }
-    #header h1 {
-      font-size: 16px; color: var(--accent); white-space: nowrap;
-      font-family: var(--font-mincho);
-      letter-spacing: 0.10em; font-weight: 700;
-    }
     /* ヘッダー内ボタンはタブレット操作を考慮して大きめに */
     #header button { font-size: 14px; padding: 10px 16px; }
     #scenario-display {
-      color: var(--text-mid); flex: 1; font-size: 12px;
-      letter-spacing: 0.02em;
+      color: var(--text); flex: 1; font-size: 20px;
+      font-family: var(--font-mincho); font-weight: 700;
+      letter-spacing: 0.06em; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
     }
     .hdr-btn { display: flex; gap: 6px; }
 
@@ -1062,7 +1059,6 @@
 <body>
 
 <header id="header">
-  <h1>🎭 GM ツール</h1>
   <div id="scenario-display">シナリオ未設定</div>
   <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
   <div class="hdr-btn">
