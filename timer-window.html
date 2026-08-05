@@ -596,7 +596,12 @@
             break;
           }
           case 'request-fullscreen':
-            showFsPrompt();
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            } else {
+              window.focus();
+              showFsPrompt();
+            }
             break;
         }
       };
@@ -644,12 +649,13 @@
       }, { once: true });
     }
 
-    applySettings(settings);
-
-    // ── 出力先選択で開いた場合は全画面誘導プロンプトを表示 ──
+    // ── 出力先選択で開いた場合: ユーザー起動直後の活性化を使って即全画面を試みる ──
+    // 失敗した場合はプロンプトにフォールバック
     if (new URLSearchParams(window.location.search).get('autoFS') === '1') {
-      showFsPrompt();
+      document.documentElement.requestFullscreen().catch(() => { showFsPrompt(); });
     }
+
+    applySettings(settings);
   </script>
 </body>
 </html>

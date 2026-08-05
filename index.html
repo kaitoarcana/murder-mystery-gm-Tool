@@ -1040,6 +1040,7 @@
     /* 縦画面: タイマーパネルからdur-rowと余分ボタンを非表示 */
     body.portrait-mode #panel-timer .dur-row { display: none; }
     body.portrait-mode #panel-timer #btn-open-sub { display: none; }
+    body.portrait-mode #panel-timer #btn-phase-fullscreen { display: none; }
     body.portrait-mode #panel-timer #btn-phase-display { display: none; }
     body.portrait-mode #panel-timer #btn-cond-phase { display: none; }
     body.portrait-mode #panel-timer #btn-score-display { display: none; }
@@ -1120,6 +1121,9 @@
     <button class="btn-ghost" id="btn-open-sub" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
       📺 フェイズウィンドウを開く
     </button>
+    <button class="btn-ghost" id="btn-phase-fullscreen" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em" onclick="requestPhaseFullscreen()">
+      ⛶ フェイズ全画面
+    </button>
     <button class="btn-ghost" id="btn-phase-display" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
       🖼 フェイズ表示設定
     </button>
@@ -1182,6 +1186,7 @@
 
       <!-- 縦画面のみ表示: 判定連動・得点表示ボタン（フェイズBGM設定の直下） -->
       <div id="portrait-bgm-btns">
+        <button class="btn-ghost" onclick="requestPhaseFullscreen()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">⛶ フェイズ全画面</button>
         <button class="btn-ghost" onclick="document.getElementById('btn-cond-phase').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">🔀 判定連動設定</button>
         <button class="btn-ghost" onclick="document.getElementById('btn-score-display').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">📊 得点表示</button>
       </div>
@@ -7111,6 +7116,14 @@ function _openTimerWinRaw(screen) {
     S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', 'width=900,height=560,resizable=yes');
   }
   setTimeout(() => { broadcastTimer(); broadcastDisplay(); updateTimerWinBtn(); }, 900);
+}
+
+function requestPhaseFullscreen() {
+  if (S.subWin && !S.subWin.closed && S.bc) {
+    S.bc.postMessage({ type: 'request-fullscreen' });
+  } else {
+    notify('フェイズウィンドウが開いていません', 'warn');
+  }
 }
 
 function toggleTimerWin() {
