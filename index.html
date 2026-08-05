@@ -310,7 +310,10 @@
     #phase-add-tab:hover { color: var(--accent); }
     .nav-empty { padding: 10px 14px; font-size: 12px; color: var(--text-dim); align-self: center; }
     /* ── Main ── */
-    #main { flex: 1; display: grid; grid-template-columns: 300px 1fr 1.5fr; overflow: hidden; min-height: 0; }
+    #main { flex: 1; display: grid; grid-template-columns: 1.5fr 1fr 300px; overflow: hidden; min-height: 0; }
+    #panel-notes { grid-column: 1; }
+    #panel-bgm   { grid-column: 2; }
+    #panel-timer { grid-column: 3; }
     .panel {
       padding: 18px 16px; border-right: 1px solid var(--border);
       overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
@@ -1016,18 +1019,18 @@
     .jsec-mode-badge.direct { background: var(--green-6); color: var(--green); border-color: var(--green-35); }
 
     /* ── 縦画面モード (body.portrait-mode クラスで適用) ──
-       左列35%はタイマー＋BGMを縦積み、右側にGM資料が広がる。 */
+       左側にGM資料、右列35%はタイマー＋BGMを縦積み（右手操作しやすい配置）。 */
     body.portrait-mode #main {
-      grid-template-columns: 35% 1fr;
+      grid-template-columns: 1fr 35%;
       grid-template-rows: auto 1fr;
     }
+    body.portrait-mode #panel-notes { grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; }
     body.portrait-mode #panel-timer {
-      grid-column: 1; grid-row: 1;
+      grid-column: 2; grid-row: 1;
       border-bottom: 1px solid var(--border);
       overflow-y: auto;
     }
-    body.portrait-mode #panel-bgm  { grid-column: 1; grid-row: 2; }
-    body.portrait-mode #panel-notes { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; }
+    body.portrait-mode #panel-bgm  { grid-column: 2; grid-row: 2; }
 
     /* 縦画面: タイマー数字を小さく */
     body.portrait-mode #time-display { font-size: 52px; letter-spacing: 3px; }
@@ -1048,13 +1051,8 @@
     #portrait-bgm-btns { display: none; }
     body.portrait-mode #portrait-bgm-btns { display: flex; flex-direction: column; gap: 6px; }
 
-    /* 縦画面: GM資料上のNowPlayingエリア（デフォルト非表示） */
-    #portrait-np-area { display: none; flex-direction: column; gap: 6px;
-      flex-shrink: 0; padding: 8px 14px; border-bottom: 1px solid var(--border); }
-    body.portrait-mode #portrait-np-area { display: flex; }
-    /* 縦画面: Now Playingエリア内の高さを縮小（現状の約75%） */
-    #portrait-np-area .now-playing { padding: 9px 10px; min-height: 0; }
-    #portrait-np-area .np-btns button { min-height: 38px; padding: 0 11px; font-size: 12px; }
+    /* BGMパネルが右列に来るため portrait-np-area は不要 */
+    #portrait-np-area { display: none !important; }
   </style>
 </head>
 <body>
@@ -8384,22 +8382,18 @@ function notify(msg, type = '') {
       btn.style.color       = on ? 'var(--accent)'     : 'var(--text-dim)';
       btn.style.borderStyle = on ? 'solid'             : 'dashed';
     }
-    // Now Playing + 音量スライダーをノートパネル上部 ↔ BGMパネルへ移動
-    const npArea = document.getElementById('portrait-np-area');
+    // BGMパネルが右列に来るため NP はBGMパネル内に常時表示。portrait-np-area は使わない。
+    // 旧セッションで portrait-np-area に移動済みの場合は bgm-sticky-top に戻す
     const bgmSticky = document.querySelector('.bgm-sticky-top');
     const nowPlaying = document.getElementById('now-playing');
     const volRow = document.querySelector('.vol-row');
-    if (npArea && bgmSticky && nowPlaying && volRow) {
-      if (on) {
-        npArea.appendChild(nowPlaying);
-        npArea.appendChild(volRow);
-      } else {
-        // 横画面に戻す: BGM sticky-top の末尾に戻す
-        bgmSticky.appendChild(nowPlaying);
-        bgmSticky.appendChild(volRow);
-        closePortraitTimeModal();
-      }
+    if (bgmSticky && nowPlaying && !bgmSticky.contains(nowPlaying)) {
+      bgmSticky.appendChild(nowPlaying);
     }
+    if (bgmSticky && volRow && !bgmSticky.contains(volRow)) {
+      bgmSticky.appendChild(volRow);
+    }
+    if (!on) closePortraitTimeModal();
   }
   mq.addEventListener('change', apply);
   apply();
