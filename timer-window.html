@@ -162,10 +162,10 @@
   <div id="esc-hint">ESC で全画面終了</div>
 
   <!-- 全画面誘導オーバーレイ (出力先選択後に表示) -->
-  <div id="fs-prompt" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,0.75);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:#fff">
-    <div style="font-size:56px;line-height:1">🖥</div>
-    <div style="font-size:22px;font-weight:700;letter-spacing:0.04em">クリックして全画面表示</div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.55)">どこでもクリックで全画面になります</div>
+  <div id="fs-prompt" tabindex="-1" style="display:none;position:fixed;inset:0;z-index:950;background:rgba(0,0,0,0.82);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:24px;color:#fff;outline:none">
+    <div style="font-size:64px;line-height:1">🖥</div>
+    <div id="fs-prompt-title" style="font-size:24px;font-weight:700;letter-spacing:0.04em">全画面表示にする</div>
+    <div id="fs-prompt-hint" style="font-size:14px;color:rgba(255,255,255,0.55)">クリック / タップ / 何かキーを押す</div>
   </div>
   <div id="dbg-toast"></div>
 
@@ -638,21 +638,65 @@
     })();
 
     // ── Init ──
+    // ── URLパラメータ解析 ──
+    const _sp = new URLSearchParams(window.location.search);
+    const _tapFS = _sp.get('tapFS') === '1';
+    const _tL = +(_sp.get('tL') || 0);
+    const _tT = +(_sp.get('tT') || 0);
+
+    // tapFS モードでは事前に getScreenDetails() をキャッシュしておく
+    let _cachedSD = null;
+    if (_tapFS && 'getScreenDetails' in window) {
+      window.getScreenDetails().then(sd => { _cachedSD = sd; }).catch(() => {});
+    }
+
     // ── 全画面誘導プロンプト ──
-    function showFsPrompt() {
+    let _fsPromptKeyHandler = null;
+    // targetScreen: ScreenDetailed | null。nullなら現在の画面でフルスクリーン
+    function showFsPrompt(targetScreen) {
       const el = document.getElementById('fs-prompt');
       if (!el) return;
       el.style.display = 'flex';
-      el.addEventListener('click', () => {
+      el.focus();
+
+      function enterFS() {
         el.style.display = 'none';
-        document.documentElement.requestFullscreen().catch(() => {});
-      }, { once: true });
+        if (_fsPromptKeyHandler) {
+          document.removeEventListener('keydown', _fsPromptKeyHandler);
+          _fsPromptKeyHandler = null;
+        }
+        const opts = targetScreen ? { screen: targetScreen } : {};
+        document.documentElement.requestFullscreen(opts).catch(() => {
+          // screen オプション非対応の場合はオプションなしで再試行
+          if (targetScreen) document.documentElement.requestFullscreen().catch(() => {});
+        });
+      }
+      el.addEventListener('click', enterFS, { once: true });
+
+      // ウィンドウ全体でキーを拾う（フォーカスがどこにあっても反応）
+      if (_fsPromptKeyHandler) document.removeEventListener('keydown', _fsPromptKeyHandler);
+      _fsPromptKeyHandler = function(e) {
+        if (el.style.display === 'none') return;
+        e.preventDefault();
+        enterFS();
+      };
+      document.addEventListener('keydown', _fsPromptKeyHandler);
     }
 
-    // ── 出力先選択で開いた場合: ユーザー起動直後の活性化を使って即全画面を試みる ──
-    // 失敗した場合はプロンプトにフォールバック
-    if (new URLSearchParams(window.location.search).get('autoFS') === '1') {
-      document.documentElement.requestFullscreen().catch(() => { showFsPrompt(); });
+    // ── tapFS: タブレット上でタップ → 別画面に全画面展開 ──
+    if (_tapFS) {
+      const titleEl = document.getElementById('fs-prompt-title');
+      const hintEl  = document.getElementById('fs-prompt-hint');
+      if (titleEl) titleEl.textContent = 'タップして別画面に全画面表示';
+      if (hintEl)  hintEl.textContent  = 'タップ / 何かキーを押す';
+
+      // キャッシュが間に合っていない場合のリトライ用
+      function _getTargetScreen() {
+        if (!_cachedSD) return null;
+        return _cachedSD.screens.find(s => s.availLeft === _tL && s.availTop === _tT) || null;
+      }
+      // 少し待ってからオーバーレイを表示（getScreenDetails のキャッシュを待つ余裕）
+      setTimeout(() => { showFsPrompt(_getTargetScreen()); }, 150);
     }
 
     applySettings(settings);

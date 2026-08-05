@@ -7109,8 +7109,13 @@ function _openTimerWinRaw(screen) {
       } catch(e) {}
     }
     if (S.subWin && !S.subWin.closed) S.subWin.close();
-    const f = `left=${screen.availLeft},top=${screen.availTop},width=${screen.availWidth},height=${screen.availHeight}`;
-    S.subWin = window.open('timer-window.html?v=' + Date.now() + '&autoFS=1', 'gm-timer-win', f);
+    // タブレット上にポップアップを開き、ユーザーのタップで別画面に全画面展開させる
+    const pw = 500, ph = 360;
+    const pl = Math.round(window.screenLeft + (window.outerWidth  - pw) / 2);
+    const pt = Math.round(window.screenTop  + (window.outerHeight - ph) / 2);
+    const f = `left=${pl},top=${pt},width=${pw},height=${ph},menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=yes`;
+    const params = `?v=${Date.now()}&tapFS=1&tL=${screen.availLeft}&tT=${screen.availTop}&tW=${screen.availWidth}&tH=${screen.availHeight}`;
+    S.subWin = window.open('timer-window.html' + params, 'gm-timer-win', f);
   } else {
     if (S.subWin && !S.subWin.closed) { S.subWin.focus(); updateTimerWinBtn(); return; }
     S.subWin = window.open('timer-window.html?v=' + Date.now(), 'gm-timer-win', 'width=900,height=560,resizable=yes');
@@ -7120,6 +7125,7 @@ function _openTimerWinRaw(screen) {
 
 function requestPhaseFullscreen() {
   if (S.subWin && !S.subWin.closed && S.bc) {
+    S.subWin.focus();
     S.bc.postMessage({ type: 'request-fullscreen' });
   } else {
     notify('フェイズウィンドウが開いていません', 'warn');
