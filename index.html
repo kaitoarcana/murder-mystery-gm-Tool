@@ -3393,9 +3393,41 @@ function getJudgmentFieldValue(secId, rowId, colId) {
   return String(rawVal);
 }
 
+// gameRecord にプリセット値（row.cells）を補完したビューを返す
+// テーブル型セルは一度も操作していない場合 gameRecord が空だが、
+// 画面はプリセット値を表示するため、判定評価でも同じ値を使う必要がある
+function buildEffectiveRecord() {
+  const base = S.scenario.gameRecord || {};
+  const merged = {};
+  // gameRecord をシャローコピー
+  for (const secId of Object.keys(base)) {
+    merged[secId] = {};
+    for (const rowId of Object.keys(base[secId])) {
+      const rv = base[secId][rowId];
+      merged[secId][rowId] = (rv && typeof rv === 'object') ? { ...rv } : rv;
+    }
+  }
+  // テーブル型のプリセット値を未記録セルに補完
+  for (const sec of (S.scenario.recordSections || [])) {
+    if (sec.style !== 'table') continue;
+    for (const row of (sec.rows || [])) {
+      for (const col of (sec.columns || [])) {
+        const preset = row.cells?.[col.id];
+        if (preset === undefined || preset === null) continue;
+        const liveVal = merged[sec.id]?.[row.id]?.[col.id];
+        if (liveVal !== undefined && liveVal !== null) continue;
+        if (!merged[sec.id]) merged[sec.id] = {};
+        if (!merged[sec.id][row.id]) merged[sec.id][row.id] = {};
+        merged[sec.id][row.id][col.id] = preset;
+      }
+    }
+  }
+  return merged;
+}
+
 function evaluateJudgmentSections() {
   const jSecs  = S.scenario.judgmentSections || [];
-  const rec    = S.scenario.gameRecord || {};
+  const rec    = buildEffectiveRecord(); // プリセット込みの有効値を参照
   const results = {};
   for (const jsec of jSecs) {
     if (jsec.mode === 'field') {
@@ -3632,7 +3664,7 @@ function condEntryMatches(entry, jResults) {
   const ck = entry?.condKind || 'judgment';
   if (ck === 'record') {
     if (!entry.secId) return true;
-    const rec = S.scenario.gameRecord || {};
+    const rec = buildEffectiveRecord();
     const lval = entry.colId
       ? rec[entry.secId]?.[entry.rowId]?.[entry.colId]
       : rec[entry.secId]?.[entry.rowId];
