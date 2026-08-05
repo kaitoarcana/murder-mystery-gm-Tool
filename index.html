@@ -310,10 +310,11 @@
     #phase-add-tab:hover { color: var(--accent); }
     .nav-empty { padding: 10px 14px; font-size: 12px; color: var(--text-dim); align-self: center; }
     /* ── Main ── */
-    #main { flex: 1; display: grid; grid-template-columns: 1.5fr 1fr 300px; overflow: hidden; min-height: 0; }
-    #panel-notes { grid-column: 1; }
-    #panel-bgm   { grid-column: 2; }
-    #panel-timer { grid-column: 3; }
+    /* 横画面: 左にGM資料(広)、右にタイマー+BGMを縦積み（右手操作しやすい配置） */
+    #main { flex: 1; display: grid; grid-template-columns: 1fr 360px; grid-template-rows: auto 1fr; overflow: hidden; min-height: 0; }
+    #panel-notes { grid-column: 1; grid-row: 1 / span 2; }
+    #panel-timer { grid-column: 2; grid-row: 1; }
+    #panel-bgm   { grid-column: 2; grid-row: 2; }
     .panel {
       padding: 18px 16px; border-right: 1px solid var(--border);
       overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
