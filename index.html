@@ -3015,11 +3015,12 @@ function renderCondRowHTML(node, ruleId, depth) {
   const condKind = node.condKind || 'record';
   const indent   = depth * 8;
 
-  const kindSelect = `<select class="form-control-sm" style="max-width:110px"
+  const kindSelect = `<select class="form-control-sm" style="max-width:120px"
     onchange="condSetKind('${ruleId}','${node.id}',this.value)">
     <option value="record"        ${condKind==='record'        ?'selected':''}>記録フィールド</option>
     <option value="judgment"      ${condKind==='judgment'      ?'selected':''}>判定結果</option>
     <option value="judgmentCount" ${condKind==='judgmentCount' ?'selected':''}>判定カウント</option>
+    <option value="sectionMax"    ${condKind==='sectionMax'    ?'selected':''}>セクション最大値</option>
   </select>`;
 
   const removeBtn = `<button class="btn-ghost" onclick="condRemoveNode('${ruleId}','${node.id}')"
@@ -3090,6 +3091,40 @@ function renderCondRowHTML(node, ruleId, depth) {
       <input type="number" class="form-control-sm" value="${node.countThreshold??1}" min="0" style="max-width:52px"
         onchange="condSetField('${ruleId}','${node.id}','countThreshold',Number(this.value))">
       <span style="color:var(--text-dim)">個</span>`;
+
+  } else if (condKind === 'sectionMax') {
+    // ── セクション最大値保持者 ──────────────────────
+    const tableSecs  = (S.scenario.recordSections || []).filter(s => s.style === 'table');
+    const maxSec     = tableSecs.find(s => s.id === node.maxSecId);
+    const secOpts    = tableSecs.map(s =>
+      `<option value="${s.id}"${node.maxSecId===s.id?' selected':''}>${escHtml(s.name||s.id)}</option>`
+    ).join('');
+    const colOpts    = maxSec
+      ? (maxSec.columns||[]).map(c =>
+          `<option value="${c.id}"${node.maxColId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
+        ).join('')
+      : '';
+    const rowOpts    = maxSec
+      ? (maxSec.rows||[]).filter(r=>!r.isHeader).map((r,idx) =>
+          `<option value="${r.id}"${node.checkRowId===r.id?' selected':''}>${escHtml(getTableRowLabel(maxSec,r,idx))}</option>`
+        ).join('')
+      : '';
+    innerHtml = `
+      <select class="form-control-sm" style="max-width:140px"
+        onchange="condSetField('${ruleId}','${node.id}','maxSecId',this.value)">
+        <option value="">テーブルセクション</option>${secOpts}
+      </select>
+      ${maxSec ? `<span style="color:var(--text-dim)">の</span>
+        <select class="form-control-sm" style="max-width:110px"
+          onchange="condSetField('${ruleId}','${node.id}','maxColId',this.value)">
+          <option value="">比較列（数値）</option>${colOpts}
+        </select>` : ''}
+      ${maxSec && node.maxColId ? `<span style="color:var(--text-dim)">で最大値を持つ行が</span>
+        <select class="form-control-sm" style="max-width:120px"
+          onchange="condSetField('${ruleId}','${node.id}','checkRowId',this.value)">
+          <option value="">行を選択</option>${rowOpts}
+        </select>
+        <span style="color:var(--text-dim)">である</span>` : ''}`;
 
   } else {
     // ── 記録フィールド参照（既存） ──────────────────
@@ -3287,6 +3322,7 @@ function condSetField(ruleId, nodeId, field, value) {
   if (field === 'compareType') { res.node.cmpSecId = ''; res.node.cmpRowId = ''; res.node.cmpColId = ''; res.node.cmpJSecId = ''; }
   if (field === 'cmpSecId')    { res.node.cmpRowId = ''; res.node.cmpColId = ''; }
   if (field === 'cmpRowId')    { res.node.cmpColId = ''; }
+  if (field === 'maxSecId')    { res.node.maxColId = ''; res.node.checkRowId = ''; }
   save(); renderAfterCondChange(ruleId);
 }
 
@@ -3495,6 +3531,24 @@ function buildEffectiveRecord() {
   return merged;
 }
 
+function evalSectionMax(jsec, rec) {
+  const secId      = jsec.maxSecId;
+  const maxColId   = jsec.maxColId;
+  const resultColId = jsec.resultColId;
+  const sec = (S.scenario.recordSections || []).find(s => s.id === secId);
+  if (!sec || sec.style !== 'table' || !maxColId) return '';
+  let maxVal = null, maxRowId = null;
+  for (const row of (sec.rows || [])) {
+    if (row.isHeader) continue;
+    const v = parseFloat(String(rec[secId]?.[row.id]?.[maxColId] ?? ''));
+    if (!isNaN(v) && (maxVal === null || v > maxVal)) { maxVal = v; maxRowId = row.id; }
+  }
+  if (maxRowId === null) return '';
+  if (resultColId) return String(rec[secId]?.[maxRowId]?.[resultColId] ?? '');
+  const rowDef = (sec.rows || []).find(r => r.id === maxRowId);
+  return rowDef?.label || maxRowId;
+}
+
 function evaluateJudgmentSections() {
   const jSecs  = S.scenario.judgmentSections || [];
   const rec    = buildEffectiveRecord(); // プリセット込みの有効値を参照
@@ -3502,6 +3556,9 @@ function evaluateJudgmentSections() {
   for (const jsec of jSecs) {
     if (jsec.mode === 'field') {
       const result = getJudgmentFieldValue(jsec.sourceSecId, jsec.sourceRowId, jsec.sourceColId);
+      results[jsec.id] = { result, ruleMatched: !!result };
+    } else if (jsec.mode === 'sectionMax') {
+      const result = evalSectionMax(jsec, rec);
       results[jsec.id] = { result, ruleMatched: !!result };
     } else {
       let ruleMatched = false;
@@ -3807,15 +3864,18 @@ function renderJudgmentSectionCard(jsec, si) {
   if (!jsec.rules) jsec.rules = [];
   const mode = jsec.mode || 'rule';
 
-  const modeSelect = `<select class="form-control-sm" style="max-width:140px"
+  const modeSelect = `<select class="form-control-sm" style="max-width:160px"
     onchange="jSecSetMode('${jsec.id}',this.value)">
-    <option value="rule"  ${mode==='rule' ?'selected':''}>ルール評価</option>
-    <option value="field" ${mode==='field'?'selected':''}>記録値を直接使用</option>
+    <option value="rule"       ${mode==='rule'      ?'selected':''}>ルール評価</option>
+    <option value="field"      ${mode==='field'     ?'selected':''}>記録値を直接使用</option>
+    <option value="sectionMax" ${mode==='sectionMax'?'selected':''}>セクション最大値</option>
   </select>`;
 
   let bodyHtml = '';
   if (mode === 'field') {
     bodyHtml = renderJSecFieldRefHTML(jsec);
+  } else if (mode === 'sectionMax') {
+    bodyHtml = renderJSecSectionMaxHTML(jsec);
   } else {
     let rulesHtml = `<div class="insert-row"><div class="insert-line"></div><button class="insert-btn" onclick="jRuleInsertAt('${jsec.id}',0)">＋</button><div class="insert-line"></div></div>`;
     jsec.rules.forEach((rule, ri) => {
@@ -3937,6 +3997,58 @@ function renderJSecFieldRefHTML(jsec) {
       ${preview}
     </div>
   </div>`;
+}
+
+function renderJSecSectionMaxHTML(jsec) {
+  const tableSecs  = (S.scenario.recordSections || []).filter(s => s.style === 'table');
+  const sec        = tableSecs.find(s => s.id === jsec.maxSecId);
+  const secOpts    = tableSecs.map(s =>
+    `<option value="${s.id}"${jsec.maxSecId===s.id?' selected':''}>${escHtml(s.name||s.id)}</option>`
+  ).join('');
+  const colOpts    = sec
+    ? (sec.columns||[]).map(c =>
+        `<option value="${c.id}"${jsec.maxColId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
+      ).join('')
+    : '';
+  const resColOpts = sec
+    ? (sec.columns||[]).map(c =>
+        `<option value="${c.id}"${jsec.resultColId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
+      ).join('')
+    : '';
+  let preview = '';
+  if (sec && jsec.maxColId && jsec.resultColId) {
+    const v = evalSectionMax(jsec, buildEffectiveRecord());
+    preview = v
+      ? `<span style="font-size:11px;color:var(--green);margin-left:8px">現在の値: <strong>${escHtml(v)}</strong></span>`
+      : `<span style="font-size:11px;color:var(--text-dim);margin-left:8px">（記録未入力または全員同値）</span>`;
+  }
+  return `<div style="background:var(--bg-2);border-radius:6px;padding:12px 14px">
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">
+      テーブルセクションの指定列で最大値を持つ行の、別の列の値を判定結果として使用します:
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <select class="form-control-sm" onchange="jSecSetMaxRef('${jsec.id}','maxSecId',this.value)">
+        <option value="">テーブルセクション選択</option>${secOpts}
+      </select>
+      ${sec ? `<span style="color:var(--text-dim)">の</span>
+        <select class="form-control-sm" onchange="jSecSetMaxRef('${jsec.id}','maxColId',this.value)">
+          <option value="">比較列（数値）</option>${colOpts}
+        </select>` : ''}
+      ${sec && jsec.maxColId ? `<span style="color:var(--text-dim)">が最大の行の</span>
+        <select class="form-control-sm" onchange="jSecSetMaxRef('${jsec.id}','resultColId',this.value)">
+          <option value="">結果列</option>${resColOpts}
+        </select>
+        <span style="color:var(--text-dim)">を判定結果にする</span>` : ''}
+      ${preview}
+    </div>
+  </div>`;
+}
+
+function jSecSetMaxRef(secId, field, value) {
+  const jsec = (S.scenario.judgmentSections||[]).find(s => s.id === secId); if (!jsec) return;
+  jsec[field] = value;
+  if (field === 'maxSecId') { jsec.maxColId = ''; jsec.resultColId = ''; }
+  save(); renderJudgmentSetupModal();
 }
 
 // ── Result modal render ───────────────────────────────
@@ -5517,6 +5629,23 @@ function evalCondition(cond, rec, jResults) {
     if (cond.op === 'neq')      return jv !== val;
     if (cond.op === 'contains') return jv.includes(val);
     return false;
+  }
+
+  if (condKind === 'sectionMax') {
+    const secId      = cond.maxSecId;
+    const maxColId   = cond.maxColId;
+    const checkRowId = cond.checkRowId;
+    const sec = (S.scenario.recordSections || []).find(s => s.id === secId);
+    if (!sec || sec.style !== 'table' || !maxColId || !checkRowId) return false;
+    let maxVal = null;
+    for (const row of (sec.rows || [])) {
+      if (row.isHeader) continue;
+      const v = parseFloat(String(rec[secId]?.[row.id]?.[maxColId] ?? ''));
+      if (!isNaN(v) && (maxVal === null || v > maxVal)) maxVal = v;
+    }
+    if (maxVal === null) return false;
+    const checkV = parseFloat(String(rec[secId]?.[checkRowId]?.[maxColId] ?? ''));
+    return !isNaN(checkV) && checkV === maxVal;
   }
 
   if (condKind === 'judgmentCount') {
