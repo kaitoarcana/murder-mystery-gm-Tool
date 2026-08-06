@@ -3121,11 +3121,11 @@ function renderCondRowHTML(node, ruleId, depth) {
       ${jCmpTypeSelect}
       ${jRhsHtml}
       <span style="color:var(--text-dim)">の判定が</span>
-      <select class="form-control-sm" style="max-width:75px"
-        onchange="condSetField('${ruleId}','${node.id}','countOp',this.value)">${countOpOpts}</select>
       <input type="number" class="form-control-sm" value="${node.countThreshold??1}" min="0" style="max-width:52px"
         onchange="condSetField('${ruleId}','${node.id}','countThreshold',Number(this.value))">
-      <span style="color:var(--text-dim)">個</span>`;
+      <span style="color:var(--text-dim)">個</span>
+      <select class="form-control-sm" style="max-width:75px"
+        onchange="condSetField('${ruleId}','${node.id}','countOp',this.value)">${countOpOpts}</select>`;
 
   } else if (condKind === 'sectionMax') {
     // ── セクション最大値保持者 ──────────────────────
@@ -3213,11 +3213,11 @@ function renderCondRowHTML(node, ruleId, depth) {
           onchange="condSetField('${ruleId}','${node.id}','rcCheckOp',this.value)">${valOpOpts}</select>
         ${valInput}
         <span style="color:var(--text-dim)">の${isTable?'行':'項目'}が</span>
-        <select class="form-control-sm" style="max-width:75px"
-          onchange="condSetField('${ruleId}','${node.id}','countOp',this.value)">${countOpOpts}</select>
         <input type="number" class="form-control-sm" value="${node.countThreshold??1}" min="0" style="max-width:52px"
           onchange="condSetField('${ruleId}','${node.id}','countThreshold',Number(this.value))">
-        <span style="color:var(--text-dim)">件</span>` : ''}`;
+        <span style="color:var(--text-dim)">件</span>
+        <select class="form-control-sm" style="max-width:75px"
+          onchange="condSetField('${ruleId}','${node.id}','countOp',this.value)">${countOpOpts}</select>` : ''}`;
 
   } else {
     // ── 記録フィールド参照（既存） ──────────────────
