@@ -1442,6 +1442,45 @@
           <button class="btn-ghost" id="btn-drive-clear" style="font-size:12px">設定をクリア</button>
         </div>
       </div>
+      <!-- ─── PDF → シーン画像 変換 ─── -->
+      <div class="drive-card" style="margin-top:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px">📄 PDF → シーン画像 変換</div>
+        <div class="form-group">
+          <label class="form-label">OAuth クライアント ID
+            <span style="font-size:11px;font-weight:400;color:var(--text-dim)">（Drive アップロード用）</span>
+          </label>
+          <input type="text" class="form-control" id="in-oauth-client-id" placeholder="…apps.googleusercontent.com">
+          <div class="form-hint">Google Cloud Console → 認証情報 → 「OAuth 2.0 クライアント ID」を作成し、承認済み JavaScript オリジンに <code>https://kaitoarcana.github.io</code> を追加してください</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">変換品質</label>
+          <select class="form-control" id="sel-pdf-res">
+            <option value="medium">標準（スクリーン表示向け）</option>
+            <option value="high">高品質（プロジェクター向け）</option>
+            <option value="low">低品質（ファイルサイズ優先）</option>
+          </select>
+        </div>
+        <div id="pdf-drop-zone" style="border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;margin-bottom:10px;transition:border-color .2s">
+          <div style="font-size:28px;line-height:1;margin-bottom:6px">📄</div>
+          <div style="font-size:13px;color:var(--text-dim)">PDF をここにドロップ、またはクリックして選択</div>
+          <div id="pdf-selected-name" style="font-size:12px;color:var(--accent);margin-top:6px;font-weight:600"></div>
+        </div>
+        <input type="file" id="in-pdf-file" accept=".pdf" style="display:none">
+        <div id="pdf-progress-wrap" style="display:none;margin-bottom:10px">
+          <div id="pdf-progress-label" style="font-size:12px;color:var(--text-dim);margin-bottom:4px">変換中...</div>
+          <div style="background:var(--bg-2);border-radius:4px;height:6px;overflow:hidden">
+            <div id="pdf-progress-bar" style="background:var(--accent);height:6px;width:0%;transition:width .25s"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-primary" id="btn-pdf-to-drive" style="font-size:12px" disabled>☁ Drive にアップロード</button>
+          <button class="btn-ghost" id="btn-pdf-to-dl" style="font-size:12px" disabled>⬇ PC にダウンロード</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
+          Drive アップロード時は Google サインインのポップアップが表示されます。PC にダウンロードは OAuth 不要です。
+        </div>
+      </div>
+
       <div style="background:var(--bg-0);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
         <div style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px">設定手順</div>
         <ol style="font-size:12px;color:var(--text-dim);line-height:2.1;padding-left:18px">
@@ -1452,6 +1491,15 @@
           <li>Google Drive で音源フォルダを右クリック →「共有」→「リンクを知っている全員」に設定</li>
           <li>フォルダのURLをコピーして上に貼り付け → 「接続してファイルを取得」</li>
         </ol>
+        <details style="margin-top:10px">
+          <summary style="font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer">PDF アップロード用 OAuth クライアント ID の追加手順</summary>
+          <ol style="font-size:12px;color:var(--text-dim);line-height:2.1;padding-left:18px;margin-top:8px">
+            <li>Google Cloud Console → 「認証情報」→「認証情報を作成」→「OAuth 2.0 クライアント ID」</li>
+            <li>アプリの種類：「ウェブ アプリケーション」</li>
+            <li>承認済み JavaScript オリジンに <code>https://kaitoarcana.github.io</code> を追加</li>
+            <li>作成後に表示されるクライアント ID を上のフィールドに貼り付け</li>
+          </ol>
+        </details>
         <div style="margin-top:10px;font-size:11px;color:var(--yellow)">
           ⚠ Google Drive API は HTTPS（またはlocalhost）が必要です。
           ローカルでは <code>python -m http.server 8000</code> で起動してください。
@@ -5019,6 +5067,9 @@ function save() {
   else           localStorage.removeItem('gm_api_key');
   if (folderUrl) localStorage.setItem('gm_folder_url', folderUrl);
   else           localStorage.removeItem('gm_folder_url');
+  const oauthId = qs('#in-oauth-client-id')?.value.trim() || '';
+  if (oauthId) localStorage.setItem('gm_oauth_client_id', oauthId);
+  else         localStorage.removeItem('gm_oauth_client_id');
   if (S.drive.folderId) {
     localStorage.setItem('gm_folder_meta', JSON.stringify({ id: S.drive.folderId, name: S.drive.folderName }));
   } else {
@@ -5035,6 +5086,8 @@ function load() {
   if (apiKey) { qs('#in-api-key').value = apiKey; S.drive.apiKey = apiKey; }
   const folderUrl = localStorage.getItem('gm_folder_url');
   if (folderUrl) qs('#in-folder-url').value = folderUrl;
+  const oauthId = localStorage.getItem('gm_oauth_client_id');
+  if (oauthId) { const el = qs('#in-oauth-client-id'); if (el) el.value = oauthId; }
   try {
     const f = localStorage.getItem('gm_folder_meta');
     if (f) { const p = JSON.parse(f); S.drive.folderId = p.id; S.drive.folderName = p.name; }
@@ -6615,6 +6668,7 @@ function bindAll() {
   qs('#in-import').onchange = importJSON;
   qs('#btn-drive-connect').onclick = driveConnect;
   qs('#btn-drive-clear').onclick   = driveClear;
+  initPdfUI();
 
   qs('#btn-phase-bgm').onclick  = openPhaseBgm;
   qs('#btn-cond-phase').onclick = openCondPhaseModal;
@@ -8452,6 +8506,176 @@ function importJSON(e) {
     } catch(err) { notify('インポート失敗: ' + err.message, 'err'); }
   };
   r.readAsText(f); e.target.value = '';
+}
+
+// ═══════════════════════════════════════════════════════
+// PDF → PNG 変換 & Drive アップロード
+// ═══════════════════════════════════════════════════════
+let _pdfFile = null;
+
+function _loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('スクリプト読み込み失敗: ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+async function _getPdfJs() {
+  if (window.pdfjsLib) return window.pdfjsLib;
+  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  return pdfjsLib;
+}
+
+async function _getOAuthToken() {
+  const clientId = (qs('#in-oauth-client-id')?.value || '').trim()
+    || localStorage.getItem('gm_oauth_client_id') || '';
+  if (!clientId) throw new Error('OAuth クライアント ID が設定されていません（設定 → Google Drive タブ）');
+  if (!window.google?.accounts) {
+    await _loadScript('https://accounts.google.com/gsi/client');
+  }
+  return new Promise((resolve, reject) => {
+    const tc = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: r => r.error
+        ? reject(new Error(r.error_description || r.error))
+        : resolve(r.access_token)
+    });
+    tc.requestAccessToken({ prompt: '' });
+  });
+}
+
+async function _driveUploadPng(blob, name, folderId, token) {
+  const meta = JSON.stringify({ name, parents: [folderId], mimeType: 'image/png' });
+  const body = new FormData();
+  body.append('metadata', new Blob([meta], { type: 'application/json' }));
+  body.append('file', blob, name);
+  const r = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
+    { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body }
+  );
+  if (!r.ok) {
+    const t = await r.text().catch(() => String(r.status));
+    throw new Error(`Drive アップロード失敗 HTTP ${r.status}: ${t}`);
+  }
+  return r.json();
+}
+
+function _setPdfProgress(done, total, label) {
+  const wrap = qs('#pdf-progress-wrap');
+  if (!wrap) return;
+  wrap.style.display = 'block';
+  const lbl = qs('#pdf-progress-label');
+  const bar = qs('#pdf-progress-bar');
+  if (lbl) lbl.textContent = label;
+  if (bar) bar.style.width = total > 0 ? `${Math.round(done / total * 100)}%` : '0%';
+}
+
+async function _renderPdfPages(file) {
+  const pdfjs = await _getPdfJs();
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: ab }).promise;
+  const total = pdf.numPages;
+  const scaleMap = { low: 1.0, medium: 1.5, high: 2.5 };
+  const scale = scaleMap[qs('#sel-pdf-res')?.value || 'medium'] || 1.5;
+  const digits = Math.max(3, String(total).length);
+  const base = file.name.replace(/\.pdf$/i, '');
+  const pages = [];
+  for (let i = 1; i <= total; i++) {
+    _setPdfProgress(i - 1, total, `ページをレンダリング中… ${i} / ${total}`);
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width; canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    pages.push({ blob, name: `${base}_p${String(i).padStart(digits, '0')}.png` });
+  }
+  return pages;
+}
+
+function _setPdfBtns(disabled) {
+  const a = qs('#btn-pdf-to-drive'), b = qs('#btn-pdf-to-dl');
+  if (a) a.disabled = disabled;
+  if (b) b.disabled = disabled || !_pdfFile;
+}
+
+async function pdfToDrive() {
+  if (!_pdfFile) { notify('PDFファイルを選択してください', 'err'); return; }
+  if (!S.drive.folderId) { notify('Drive フォルダを先に設定・接続してください', 'err'); return; }
+  _setPdfBtns(true);
+  try {
+    notify('Google 認証中… ポップアップを確認してください', '');
+    const token = await _getOAuthToken();
+    const pages = await _renderPdfPages(_pdfFile);
+    for (let i = 0; i < pages.length; i++) {
+      _setPdfProgress(i, pages.length, `Drive にアップロード中… ${i + 1} / ${pages.length}`);
+      await _driveUploadPng(pages[i].blob, pages[i].name, S.drive.folderId, token);
+    }
+    _setPdfProgress(pages.length, pages.length, `完了！ ${pages.length} 枚をアップロードしました`);
+    notify(`${pages.length} 枚を Drive にアップロードしました`, 'ok');
+  } catch (e) {
+    notify('エラー: ' + e.message, 'err');
+    console.error('[pdfToDrive]', e);
+  } finally {
+    _setPdfBtns(false);
+  }
+}
+
+async function pdfToDownload() {
+  if (!_pdfFile) { notify('PDFファイルを選択してください', 'err'); return; }
+  _setPdfBtns(true);
+  try {
+    const pages = await _renderPdfPages(_pdfFile);
+    for (let i = 0; i < pages.length; i++) {
+      _setPdfProgress(i + 1, pages.length, `ダウンロード中… ${i + 1} / ${pages.length}`);
+      const url = URL.createObjectURL(pages[i].blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = pages[i].name; a.click();
+      URL.revokeObjectURL(url);
+      if (i < pages.length - 1) await new Promise(r => setTimeout(r, 350));
+    }
+    _setPdfProgress(pages.length, pages.length, `完了！ ${pages.length} 枚をダウンロードしました`);
+    notify(`${pages.length} 枚のPNGをダウンロードしました`, 'ok');
+  } catch (e) {
+    notify('エラー: ' + e.message, 'err');
+  } finally {
+    _setPdfBtns(false);
+  }
+}
+
+function _pdfSetFile(file) {
+  if (!file) return;
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    notify('PDF ファイルを選択してください', 'err'); return;
+  }
+  _pdfFile = file;
+  const nm = qs('#pdf-selected-name');
+  if (nm) nm.textContent = file.name;
+  _setPdfBtns(false);
+  const pw = qs('#pdf-progress-wrap');
+  if (pw) pw.style.display = 'none';
+}
+
+function initPdfUI() {
+  const dz = qs('#pdf-drop-zone'), fi = qs('#in-pdf-file');
+  if (!dz || !fi) return;
+  dz.addEventListener('click', () => fi.click());
+  fi.addEventListener('change', e => _pdfSetFile(e.target.files?.[0]));
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--accent)'; });
+  dz.addEventListener('dragleave', () => { dz.style.borderColor = ''; });
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.style.borderColor = '';
+    _pdfSetFile(e.dataTransfer.files?.[0]);
+  });
+  qs('#btn-pdf-to-drive').onclick = pdfToDrive;
+  qs('#btn-pdf-to-dl').onclick = pdfToDownload;
 }
 
 // ═══════════════════════════════════════════════════════
