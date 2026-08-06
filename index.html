@@ -5178,9 +5178,11 @@ function applyNotesSplit() {
     dividerEl.classList.remove('active');
     return;
   }
+  const ph = S.scenario.phases?.[S.curPhase];
+  const split = (ph && ph.checklistSplit != null) ? ph.checklistSplit : notesSplit;
   dividerEl.classList.add('active');
-  notesEl.style.flexGrow = String(notesSplit * 100);
-  checkEl.style.flexGrow = String((1 - notesSplit) * 100);
+  notesEl.style.flexGrow = String(split * 100);
+  checkEl.style.flexGrow = String((1 - split) * 100);
 }
 
 function initDividerDrag() {
@@ -5199,10 +5201,15 @@ function initDividerDrag() {
     if (!dragging) return;
     const panelH = panel.getBoundingClientRect().height;
     const newH = Math.max(80, Math.min(panelH - 120, startH + (e.clientY - startY)));
-    notesSplit = newH / panelH;
+    const ratio = newH / panelH;
+    notesSplit = ratio;
+    const ph = S.scenario.phases?.[S.curPhase];
+    if (ph) ph.checklistSplit = ratio;
     applyNotesSplit();
   });
-  divider.addEventListener('pointerup', () => { dragging = false; });
+  divider.addEventListener('pointerup', () => {
+    if (dragging) { dragging = false; save(); }
+  });
   divider.addEventListener('pointercancel', () => { dragging = false; });
 }
 
@@ -6938,6 +6945,9 @@ function selectPhase(i) {
     updateOverlayPanel(null);
   }
   updateCondRefreshBtn();
+  // フェーズ固有のチェックリスト分割比を復元
+  const _phForSplit = S.scenario.phases[i];
+  if (_phForSplit && _phForSplit.checklistSplit != null) notesSplit = _phForSplit.checklistSplit;
   renderChecklist();
   renderScenePanel();
 
