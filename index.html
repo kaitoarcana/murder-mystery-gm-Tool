@@ -3094,32 +3094,35 @@ function renderCondRowHTML(node, ruleId, depth) {
 
   } else if (condKind === 'sectionMax') {
     // ── セクション最大値保持者 ──────────────────────
-    const tableSecs  = (S.scenario.recordSections || []).filter(s => s.style === 'table');
-    const maxSec     = tableSecs.find(s => s.id === node.maxSecId);
-    const secOpts    = tableSecs.map(s =>
+    const allSecs2   = S.scenario.recordSections || [];
+    const maxSec     = allSecs2.find(s => s.id === node.maxSecId);
+    const isMaxTable = maxSec?.style === 'table';
+    const secOpts    = allSecs2.map(s =>
       `<option value="${s.id}"${node.maxSecId===s.id?' selected':''}>${escHtml(s.name||s.id)}</option>`
     ).join('');
-    const colOpts    = maxSec
+    const colOpts    = isMaxTable
       ? (maxSec.columns||[]).map(c =>
           `<option value="${c.id}"${node.maxColId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
         ).join('')
       : '';
     const rowOpts    = maxSec
       ? (maxSec.rows||[]).filter(r=>!r.isHeader).map((r,idx) =>
-          `<option value="${r.id}"${node.checkRowId===r.id?' selected':''}>${escHtml(getTableRowLabel(maxSec,r,idx))}</option>`
+          `<option value="${r.id}"${node.checkRowId===r.id?' selected':''}>${escHtml(isMaxTable?getTableRowLabel(maxSec,r,idx):(r.label||r.id))}</option>`
         ).join('')
       : '';
+    // テーブル: 列選択 → 行選択、フォーム: 行選択のみ
+    const colReady = !isMaxTable || node.maxColId;
     innerHtml = `
       <select class="form-control-sm" style="max-width:140px"
         onchange="condSetField('${ruleId}','${node.id}','maxSecId',this.value)">
-        <option value="">テーブルセクション</option>${secOpts}
+        <option value="">セクション選択</option>${secOpts}
       </select>
-      ${maxSec ? `<span style="color:var(--text-dim)">の</span>
+      ${isMaxTable ? `<span style="color:var(--text-dim)">の</span>
         <select class="form-control-sm" style="max-width:110px"
           onchange="condSetField('${ruleId}','${node.id}','maxColId',this.value)">
           <option value="">比較列（数値）</option>${colOpts}
         </select>` : ''}
-      ${maxSec && node.maxColId ? `<span style="color:var(--text-dim)">で最大値を持つ行が</span>
+      ${maxSec && colReady ? `<span style="color:var(--text-dim)">で最大値を持つ行が</span>
         <select class="form-control-sm" style="max-width:120px"
           onchange="condSetField('${ruleId}','${node.id}','checkRowId',this.value)">
           <option value="">行を選択</option>${rowOpts}
@@ -3532,19 +3535,25 @@ function buildEffectiveRecord() {
 }
 
 function evalSectionMax(jsec, rec) {
-  const secId      = jsec.maxSecId;
-  const maxColId   = jsec.maxColId;
+  const secId       = jsec.maxSecId;
+  const maxColId    = jsec.maxColId;
   const resultColId = jsec.resultColId;
   const sec = (S.scenario.recordSections || []).find(s => s.id === secId);
-  if (!sec || sec.style !== 'table' || !maxColId) return '';
+  if (!sec) return '';
+  const isTable = sec.style === 'table';
+  // テーブル型は比較列必須
+  if (isTable && !maxColId) return '';
   let maxVal = null, maxRowId = null;
   for (const row of (sec.rows || [])) {
     if (row.isHeader) continue;
-    const v = parseFloat(String(rec[secId]?.[row.id]?.[maxColId] ?? ''));
+    const raw = isTable
+      ? rec[secId]?.[row.id]?.[maxColId] ?? ''
+      : rec[secId]?.[row.id] ?? '';
+    const v = parseFloat(String(raw));
     if (!isNaN(v) && (maxVal === null || v > maxVal)) { maxVal = v; maxRowId = row.id; }
   }
   if (maxRowId === null) return '';
-  if (resultColId) return String(rec[secId]?.[maxRowId]?.[resultColId] ?? '');
+  if (isTable && resultColId) return String(rec[secId]?.[maxRowId]?.[resultColId] ?? '');
   const rowDef = (sec.rows || []).find(r => r.id === maxRowId);
   return rowDef?.label || maxRowId;
 }
@@ -4000,45 +4009,50 @@ function renderJSecFieldRefHTML(jsec) {
 }
 
 function renderJSecSectionMaxHTML(jsec) {
-  const tableSecs  = (S.scenario.recordSections || []).filter(s => s.style === 'table');
-  const sec        = tableSecs.find(s => s.id === jsec.maxSecId);
-  const secOpts    = tableSecs.map(s =>
+  const allSecs    = S.scenario.recordSections || [];
+  const sec        = allSecs.find(s => s.id === jsec.maxSecId);
+  const isTable    = sec?.style === 'table';
+  const secOpts    = allSecs.map(s =>
     `<option value="${s.id}"${jsec.maxSecId===s.id?' selected':''}>${escHtml(s.name||s.id)}</option>`
   ).join('');
-  const colOpts    = sec
+  const colOpts    = isTable
     ? (sec.columns||[]).map(c =>
         `<option value="${c.id}"${jsec.maxColId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
       ).join('')
     : '';
-  const resColOpts = sec
+  const resColOpts = isTable
     ? (sec.columns||[]).map(c =>
         `<option value="${c.id}"${jsec.resultColId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
       ).join('')
     : '';
+  // プレビュー表示条件: テーブルは比較列+結果列まで選択済み、フォームはセクション選択のみでOK
+  const canPreview = sec && (!isTable || (jsec.maxColId && jsec.resultColId));
   let preview = '';
-  if (sec && jsec.maxColId && jsec.resultColId) {
+  if (canPreview) {
     const v = evalSectionMax(jsec, buildEffectiveRecord());
     preview = v
       ? `<span style="font-size:11px;color:var(--green);margin-left:8px">現在の値: <strong>${escHtml(v)}</strong></span>`
       : `<span style="font-size:11px;color:var(--text-dim);margin-left:8px">（記録未入力または全員同値）</span>`;
   }
+  const descText = isTable
+    ? 'テーブルセクションの指定列で最大値を持つ行の、別の列の値を判定結果として使用します:'
+    : 'フォームセクションで最大の数値を持つ行のラベルを判定結果として使用します:';
   return `<div style="background:var(--bg-2);border-radius:6px;padding:12px 14px">
-    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">
-      テーブルセクションの指定列で最大値を持つ行の、別の列の値を判定結果として使用します:
-    </div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">${descText}</div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <select class="form-control-sm" onchange="jSecSetMaxRef('${jsec.id}','maxSecId',this.value)">
-        <option value="">テーブルセクション選択</option>${secOpts}
+        <option value="">セクション選択</option>${secOpts}
       </select>
-      ${sec ? `<span style="color:var(--text-dim)">の</span>
+      ${isTable ? `<span style="color:var(--text-dim)">の</span>
         <select class="form-control-sm" onchange="jSecSetMaxRef('${jsec.id}','maxColId',this.value)">
           <option value="">比較列（数値）</option>${colOpts}
         </select>` : ''}
-      ${sec && jsec.maxColId ? `<span style="color:var(--text-dim)">が最大の行の</span>
+      ${isTable && jsec.maxColId ? `<span style="color:var(--text-dim)">が最大の行の</span>
         <select class="form-control-sm" onchange="jSecSetMaxRef('${jsec.id}','resultColId',this.value)">
           <option value="">結果列</option>${resColOpts}
         </select>
         <span style="color:var(--text-dim)">を判定結果にする</span>` : ''}
+      ${!isTable && sec ? `<span style="color:var(--text-dim)">の最大値行のラベルを判定結果にする</span>` : ''}
       ${preview}
     </div>
   </div>`;
@@ -5636,15 +5650,23 @@ function evalCondition(cond, rec, jResults) {
     const maxColId   = cond.maxColId;
     const checkRowId = cond.checkRowId;
     const sec = (S.scenario.recordSections || []).find(s => s.id === secId);
-    if (!sec || sec.style !== 'table' || !maxColId || !checkRowId) return false;
+    if (!sec || !checkRowId) return false;
+    const isTable = sec.style === 'table';
+    if (isTable && !maxColId) return false;
     let maxVal = null;
     for (const row of (sec.rows || [])) {
       if (row.isHeader) continue;
-      const v = parseFloat(String(rec[secId]?.[row.id]?.[maxColId] ?? ''));
+      const raw = isTable
+        ? rec[secId]?.[row.id]?.[maxColId] ?? ''
+        : rec[secId]?.[row.id] ?? '';
+      const v = parseFloat(String(raw));
       if (!isNaN(v) && (maxVal === null || v > maxVal)) maxVal = v;
     }
     if (maxVal === null) return false;
-    const checkV = parseFloat(String(rec[secId]?.[checkRowId]?.[maxColId] ?? ''));
+    const checkRaw = isTable
+      ? rec[secId]?.[checkRowId]?.[maxColId] ?? ''
+      : rec[secId]?.[checkRowId] ?? '';
+    const checkV = parseFloat(String(checkRaw));
     return !isNaN(checkV) && checkV === maxVal;
   }
 
