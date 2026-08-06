@@ -1304,6 +1304,10 @@
         </div>
         <div id="alarm-global-empty" style="font-size:12px;color:var(--text-dim);margin-bottom:8px">未設定</div>
         <button class="btn-ghost" id="btn-alarm-global-pick" style="font-size:12px">🔔 ファイルを選択…</button>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;color:var(--text-mid);cursor:pointer">
+          <input type="checkbox" id="chk-alarm-suppress-hidden" style="width:14px;height:14px;cursor:pointer">
+          タイマーが非表示のフェイズでは終了音を鳴らさない
+        </label>
       </div>
 
       <div style="margin-top:14px;display:flex;gap:8px">
@@ -6604,6 +6608,10 @@ function bindAll() {
     S.scenario.alarmFileId = null; S.scenario.alarmFileName = null;
     save(); renderAlarmGlobal();
   };
+  qs('#chk-alarm-suppress-hidden').onchange = e => {
+    S.scenario.alarmSuppressWhenHidden = e.target.checked;
+    save();
+  };
   qs('#phb-btn-alarm-pick').onclick  = () => openPicker('alarm-phase');
   qs('#phb-btn-alarm-clear').onclick = () => { const ph = getCur(); if (ph) { ph.alarmFileId = null; ph.alarmFileName = null; save(); renderPhBgmAlarm(); } };
 
@@ -7117,6 +7125,10 @@ function toggleMode() {
 async function playAlarm() {
   if (S.mode === 'mastering') return;
   const ph = getCur();
+  if (S.scenario.alarmSuppressWhenHidden) {
+    const timerVis = ph?.timerVisible != null ? ph.timerVisible : true;
+    if (!timerVis) return;
+  }
   const fileId   = ph?.alarmFileId   || S.scenario.alarmFileId;
   const fileName = ph?.alarmFileName || S.scenario.alarmFileName;
   if (!fileId) return;
@@ -7145,6 +7157,8 @@ function renderAlarmGlobal() {
   qs('#alarm-global-tag').style.display  = has ? 'flex'  : 'none';
   qs('#alarm-global-empty').style.display = has ? 'none' : 'block';
   if (has) qs('#alarm-global-name').textContent = '🔔 ' + (S.scenario.alarmFileName || S.scenario.alarmFileId);
+  const chk = qs('#chk-alarm-suppress-hidden');
+  if (chk) chk.checked = !!S.scenario.alarmSuppressWhenHidden;
 }
 
 function renderPhBgmSfxList() {
