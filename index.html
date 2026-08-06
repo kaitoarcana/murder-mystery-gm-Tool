@@ -3185,16 +3185,14 @@ function renderCondRowHTML(node, ruleId, depth) {
         ).join('')
       : '';
     const fieldReady = sec && (!isTable || node.rcColId);
-    // テーブルは最初の非ヘッダー行をプロキシとして列の型情報を取得
-    const proxyRowId = isTable ? ((sec.rows||[]).find(r=>!r.isHeader)?.id || '') : '';
+    // 最初の非ヘッダー行をプロキシとして型情報を取得（テーブル・フォーム共通）
+    const proxyRowId = (sec?.rows||[]).find(r=>!r.isHeader)?.id || '';
+    const proxyColId = isTable ? node.rcColId : null;
     const fakeNode   = { value: node.rcCheckValue || '', op: node.rcCheckOp || 'eq' };
-    const valOpOpts  = fieldReady ? buildOpOpts(node.rcCheckOp||'eq', getCondFieldType(sec, proxyRowId, node.rcColId), 'short') : '';
+    const valOpOpts  = fieldReady ? buildOpOpts(node.rcCheckOp||'eq', getCondFieldType(sec, proxyRowId, proxyColId), 'short') : '';
     const valInput   = fieldReady
-      ? (isTable
-          ? buildCondValueInput(sec, proxyRowId, node.rcColId, fakeNode,
-              `condSetField('${ruleId}','${node.id}','rcCheckValue',this.value)`)
-          : `<input type="text" class="form-control-sm" value="${escHtml(node.rcCheckValue||'')}"
-               style="max-width:100px" onchange="condSetField('${ruleId}','${node.id}','rcCheckValue',this.value)">`)
+      ? buildCondValueInput(sec, proxyRowId, proxyColId, fakeNode,
+          `condSetField('${ruleId}','${node.id}','rcCheckValue',this.value)`)
       : '';
     const countOpOpts = [['>=','以上'],['<=','以下'],['>','より多い'],['<','より少ない'],['===','ちょうど']]
       .map(([v,l]) => `<option value="${v}"${(node.countOp||'>=')===v?' selected':''}>${l}</option>`).join('');
