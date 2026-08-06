@@ -2914,7 +2914,13 @@ function renderCondTreeHTML(node, ruleId, depth) {
 // ── 判定結果値の選択肢ヘルパー ────────────────────────
 function getJSecResultOptions(jSecId) {
   const jsec = (S.scenario.judgmentSections || []).find(s => s.id === jSecId);
-  if (!jsec || jsec.mode === 'field') return null; // field mode は実行時値なのでプルダウン不可
+  if (!jsec) return null;
+  if (jsec.mode === 'field') return null; // field mode は実行時値なのでプルダウン不可
+
+  if (jsec.mode === 'sectionMax') {
+    return _sectionMaxResultOptions(jsec);
+  }
+
   const seen = new Set();
   const vals = [];
   for (const rule of (jsec.rules || [])) {
@@ -2924,11 +2930,39 @@ function getJSecResultOptions(jSecId) {
   return vals; // 空配列 = まだルール未設定
 }
 
+// sectionMax モードで取り得る判定結果の選択肢を列挙
+function _sectionMaxResultOptions(jsec) {
+  const sec = (S.scenario.recordSections || []).find(s => s.id === jsec.maxSecId);
+  if (!sec) return null;
+  const isTable = sec.style === 'table';
+  const seen = new Set();
+  const vals = [];
+  for (const row of (sec.rows || [])) {
+    if (row.isHeader) continue;
+    let val;
+    if (isTable && jsec.resultColId) {
+      // プリセット値を優先、なければ行ラベル
+      const preset = row.cells?.[jsec.resultColId];
+      val = (preset !== undefined && preset !== null && preset !== '') ? String(preset) : (row.label || row.id);
+    } else {
+      val = row.label || row.id;
+    }
+    if (val && !seen.has(val)) { seen.add(val); vals.push(val); }
+  }
+  return vals.length ? vals : null;
+}
+
 function getAllJSecResultOptions() {
   const seen = new Set();
   const vals = [];
   for (const jsec of (S.scenario.judgmentSections || [])) {
     if (jsec.mode === 'field') continue;
+    if (jsec.mode === 'sectionMax') {
+      for (const v of (_sectionMaxResultOptions(jsec) || [])) {
+        if (!seen.has(v)) { seen.add(v); vals.push(v); }
+      }
+      continue;
+    }
     for (const rule of (jsec.rules || [])) {
       if (rule.result && !seen.has(rule.result)) { vals.push(rule.result); seen.add(rule.result); }
     }
