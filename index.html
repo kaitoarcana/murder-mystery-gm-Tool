@@ -3049,12 +3049,13 @@ function renderCondRowHTML(node, ruleId, depth) {
   const condKind = node.condKind || 'record';
   const indent   = depth * 8;
 
-  const kindSelect = `<select class="form-control-sm" style="max-width:120px"
+  const kindSelect = `<select class="form-control-sm" style="max-width:130px"
     onchange="condSetKind('${ruleId}','${node.id}',this.value)">
     <option value="record"        ${condKind==='record'        ?'selected':''}>記録フィールド</option>
     <option value="judgment"      ${condKind==='judgment'      ?'selected':''}>判定結果</option>
     <option value="judgmentCount" ${condKind==='judgmentCount' ?'selected':''}>判定カウント</option>
     <option value="sectionMax"    ${condKind==='sectionMax'    ?'selected':''}>セクション最大値</option>
+    <option value="recordCount"   ${condKind==='recordCount'   ?'selected':''}>記録件数</option>
   </select>`;
 
   const removeBtn = `<button class="btn-ghost" onclick="condRemoveNode('${ruleId}','${node.id}')"
@@ -3169,6 +3170,54 @@ function renderCondRowHTML(node, ruleId, depth) {
           <option value="">行を選択</option>${rowOpts}
         </select>
         <span style="color:var(--text-dim)">である</span>` : ''}`;
+
+  } else if (condKind === 'recordCount') {
+    // ── 記録件数 ──────────────────────────────────
+    const secs      = S.scenario.recordSections || [];
+    const sec       = secs.find(s => s.id === node.rcSecId);
+    const isTable   = sec?.style === 'table';
+    const secOpts   = secs.map(s =>
+      `<option value="${s.id}"${node.rcSecId===s.id?' selected':''}>${escHtml(s.name||s.id)}</option>`
+    ).join('');
+    const colOpts   = isTable
+      ? (sec.columns||[]).map(c =>
+          `<option value="${c.id}"${node.rcColId===c.id?' selected':''}>${escHtml(c.name||c.id)}</option>`
+        ).join('')
+      : '';
+    const fieldReady = sec && (!isTable || node.rcColId);
+    // テーブルは最初の非ヘッダー行をプロキシとして列の型情報を取得
+    const proxyRowId = isTable ? ((sec.rows||[]).find(r=>!r.isHeader)?.id || '') : '';
+    const fakeNode   = { value: node.rcCheckValue || '', op: node.rcCheckOp || 'eq' };
+    const valOpOpts  = fieldReady ? buildOpOpts(node.rcCheckOp||'eq', getCondFieldType(sec, proxyRowId, node.rcColId), 'short') : '';
+    const valInput   = fieldReady
+      ? (isTable
+          ? buildCondValueInput(sec, proxyRowId, node.rcColId, fakeNode,
+              `condSetField('${ruleId}','${node.id}','rcCheckValue',this.value)`)
+          : `<input type="text" class="form-control-sm" value="${escHtml(node.rcCheckValue||'')}"
+               style="max-width:100px" onchange="condSetField('${ruleId}','${node.id}','rcCheckValue',this.value)">`)
+      : '';
+    const countOpOpts = [['>=','以上'],['<=','以下'],['>','より多い'],['<','より少ない'],['===','ちょうど']]
+      .map(([v,l]) => `<option value="${v}"${(node.countOp||'>=')===v?' selected':''}>${l}</option>`).join('');
+    innerHtml = `
+      <select class="form-control-sm" style="max-width:140px"
+        onchange="condSetField('${ruleId}','${node.id}','rcSecId',this.value)">
+        <option value="">セクション選択</option>${secOpts}
+      </select>
+      ${isTable ? `<span style="color:var(--text-dim)">の</span>
+        <select class="form-control-sm" style="max-width:110px"
+          onchange="condSetField('${ruleId}','${node.id}','rcColId',this.value)">
+          <option value="">列を選択</option>${colOpts}
+        </select>` : ''}
+      ${fieldReady ? `<span style="color:var(--text-dim)">が</span>
+        <select class="form-control-sm" style="max-width:80px"
+          onchange="condSetField('${ruleId}','${node.id}','rcCheckOp',this.value)">${valOpOpts}</select>
+        ${valInput}
+        <span style="color:var(--text-dim)">の${isTable?'行':'項目'}が</span>
+        <select class="form-control-sm" style="max-width:75px"
+          onchange="condSetField('${ruleId}','${node.id}','countOp',this.value)">${countOpOpts}</select>
+        <input type="number" class="form-control-sm" value="${node.countThreshold??1}" min="0" style="max-width:52px"
+          onchange="condSetField('${ruleId}','${node.id}','countThreshold',Number(this.value))">
+        <span style="color:var(--text-dim)">件</span>` : ''}`;
 
   } else {
     // ── 記録フィールド参照（既存） ──────────────────
@@ -3367,6 +3416,8 @@ function condSetField(ruleId, nodeId, field, value) {
   if (field === 'cmpSecId')    { res.node.cmpRowId = ''; res.node.cmpColId = ''; }
   if (field === 'cmpRowId')    { res.node.cmpColId = ''; }
   if (field === 'maxSecId')    { res.node.maxColId = ''; res.node.checkRowId = ''; }
+  if (field === 'rcSecId')     { res.node.rcColId = ''; res.node.rcCheckValue = ''; }
+  if (field === 'rcColId')     { res.node.rcCheckValue = ''; }
   save(); renderAfterCondChange(ruleId);
 }
 
@@ -5737,6 +5788,46 @@ function evalCondition(cond, rec, jResults) {
       : rec[secId]?.[checkRowId] ?? '';
     const checkV = parseFloat(String(checkRaw));
     return !isNaN(checkV) && checkV === targetVal;
+  }
+
+  if (condKind === 'recordCount') {
+    const secId      = cond.rcSecId;
+    const colId      = cond.rcColId;
+    const checkOp    = cond.rcCheckOp || 'eq';
+    const checkValue = String(cond.rcCheckValue ?? '');
+    const countOp    = cond.countOp || '>=';
+    const threshold  = cond.countThreshold ?? 1;
+    const sec = (S.scenario.recordSections || []).find(s => s.id === secId);
+    if (!sec) return false;
+    const isTable = sec.style === 'table';
+    if (isTable && !colId) return false;
+    let count = 0;
+    for (const row of (sec.rows || [])) {
+      if (row.isHeader) continue;
+      const rawVal = isTable
+        ? rec[secId]?.[row.id]?.[colId] ?? ''
+        : rec[secId]?.[row.id] ?? '';
+      const lv = String(rawVal ?? '');
+      const rv = checkValue;
+      let match = false;
+      if      (checkOp === 'eq')       match = lv === rv;
+      else if (checkOp === 'neq')      match = lv !== rv;
+      else if (checkOp === 'contains') match = lv.includes(rv);
+      else {
+        const ln = parseFloat(lv), rn = parseFloat(rv);
+        if      (checkOp === 'gt')  match = !isNaN(ln) && !isNaN(rn) && ln >  rn;
+        else if (checkOp === 'gte') match = !isNaN(ln) && !isNaN(rn) && ln >= rn;
+        else if (checkOp === 'lt')  match = !isNaN(ln) && !isNaN(rn) && ln <  rn;
+        else if (checkOp === 'lte') match = !isNaN(ln) && !isNaN(rn) && ln <= rn;
+      }
+      if (match) count++;
+    }
+    if (countOp === '>=')  return count >= threshold;
+    if (countOp === '<=')  return count <= threshold;
+    if (countOp === '>')   return count >  threshold;
+    if (countOp === '<')   return count <  threshold;
+    if (countOp === '===') return count === threshold;
+    return false;
   }
 
   if (condKind === 'judgmentCount') {
