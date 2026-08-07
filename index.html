@@ -7915,7 +7915,11 @@ async function playTrack(phaseIdx, trackIdx) {
   }
 
   const buf = S.audio.buffers[track.fileId];
-  const trans = track.transition || 'fade';
+  // 「停止方法」は今再生中のトラック側の設定を参照する
+  const currentTrackData = S.audio.current
+    ? S.scenario.phases[S.audio.current.phaseIdx]?.bgm?.[S.audio.current.trackIdx]
+    : null;
+  const trans = currentTrackData?.transition || 'fade';
 
   if (!S.audio.current) {
     startSource(buf, track, phaseIdx, trackIdx, false);
@@ -8090,7 +8094,7 @@ function renderBGMPanel() {
         <button class="track-loop-btn${loopOn ? ' on' : ''}"
                 onclick="event.stopPropagation();toggleLoop(${S.curPhase},${i})"
                 title="ループ: ${loopOn ? 'ON' : 'OFF'}">🔄</button>
-        <select class="track-trans-sel" onchange="setTransition(${S.curPhase},${i},this.value)" title="切替挙動"
+        <select class="track-trans-sel" onchange="setTransition(${S.curPhase},${i},this.value)" title="この曲の停止方法"
                 onclick="event.stopPropagation()">
           <option value="stop"${trans==='stop'?' selected':''}>⚡ 即</option>
           <option value="fade"${trans==='fade'?' selected':''}>↓ フェード</option>
@@ -8638,7 +8642,7 @@ function renderPhBgmList() {
       <span class="drag-handle" draggable="true">⠿</span>
       <span class="ph-bgm-name" title="${escHtml(track.name)}">${escHtml(track.name)}</span>
       <button class="track-loop-btn${loopOn ? ' on' : ''}" onclick="phBgmToggleLoop(${i})" title="ループ: ${loopOn?'ON':'OFF'}">🔄</button>
-      <select class="track-trans-sel" onchange="phBgmSetTrans(${i},this.value)" title="切替挙動">
+      <select class="track-trans-sel" onchange="phBgmSetTrans(${i},this.value)" title="この曲の停止方法">
         <option value="stop"${trans==='stop'?' selected':''}>⚡ 即</option>
         <option value="fade"${trans==='fade'?' selected':''}>↓ フェード</option>
         <option value="crossfade"${trans==='crossfade'?' selected':''}>⇌ クロス</option>
