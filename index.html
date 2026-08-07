@@ -526,7 +526,8 @@
     #vol-target-btn {
       font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
       cursor: pointer; letter-spacing: .3px; border: none; flex-shrink: 0;
-      width: 62px; display: flex; align-items: center; justify-content: center;
+      width: 62px; height: 34px; line-height: 1.35;
+      display: grid; place-items: center; text-align: center;
     }
     #vol-target-btn[data-target="bgm"] { background: var(--green-13); color: var(--green); }
     #vol-target-btn[data-target="se"]  { background: oklch(52% 0.13 250 / 0.14); color: oklch(52% 0.13 250); }
@@ -1198,7 +1199,7 @@
 
       <!-- Volume -->
       <div class="vol-row">
-        <button id="vol-target-btn" data-target="bgm" onclick="setVolTarget()">BGM音量</button>
+        <button id="vol-target-btn" data-target="bgm" onclick="setVolTarget()">BGM<br>音量</button>
         <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.7">
         <span id="vol-display" style="width:36px;text-align:right">70%</span>
       </div>
@@ -8180,7 +8181,7 @@ function onVolChange() {
 function setVolTarget() {
   S.volTarget = S.volTarget === 'bgm' ? 'se' : 'bgm';
   const btn = qs('#vol-target-btn');
-  btn.textContent = S.volTarget === 'bgm' ? 'BGM音量' : 'SE音量';
+  btn.innerHTML = S.volTarget === 'bgm' ? 'BGM<br>音量' : 'SE音量';
   btn.dataset.target = S.volTarget;
   const v = S.volTarget === 'bgm' ? S.bgmVol : S.sfxVol;
   const slider = qs('#vol-slider');
