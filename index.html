@@ -2071,6 +2071,7 @@ const S = {
   outputPref: { default: '', video: '' }, // audio output device IDs
   checkState: {},  // phaseIdx → [{ text, checked }]  (runtime, not saved)
   sfxBuf: {},
+  sfxActive: {},   // fileId → { src, gain, ctx, btn, stopMode }
   drive: { ok: false, apiKey: null, folderId: null, folderName: null, files: [] },
   picker: { ctx: null, sel: null, sels: [], multi: false },
   subWin: null,
@@ -7479,10 +7480,22 @@ function renderPhBgmSfxList() {
     list.innerHTML = '<div class="empty">効果音が設定されていません</div>';
     return;
   }
-  sfx.forEach(item => {
+  sfx.forEach((item, i) => {
     const el = document.createElement('div');
     el.className = 'sfx-tag';
-    el.innerHTML = `<span>🔊 ${escHtml(item.name)}</span><button class="btn-ghost" onclick="phBgmSfxRemove('${escHtml(item.fileId)}')" style="padding:2px 8px;font-size:11px">✕</button>`;
+    const pm = item.playMode || 'oneshot';
+    const sm = item.stopMode || 'immediate';
+    el.innerHTML = `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔊 ${escHtml(item.name)}</span>
+      <select class="form-control-sm" style="max-width:80px;flex-shrink:0" onchange="phBgmSfxSet(${i},'playMode',this.value)">
+        <option value="oneshot"${pm==='oneshot'?' selected':''}>一度再生</option>
+        <option value="hold"${pm==='hold'?' selected':''}>押下中</option>
+        <option value="toggle"${pm==='toggle'?' selected':''}>トグル</option>
+      </select>
+      <select class="form-control-sm" style="max-width:80px;flex-shrink:0" onchange="phBgmSfxSet(${i},'stopMode',this.value)">
+        <option value="immediate"${sm==='immediate'?' selected':''}>即停止</option>
+        <option value="fadeout"${sm==='fadeout'?' selected':''}>FadeOut</option>
+      </select>
+      <button class="btn-ghost" onclick="phBgmSfxRemove('${escHtml(item.fileId)}')" style="padding:2px 8px;font-size:11px">✕</button>`;
     list.appendChild(el);
   });
 }
@@ -7490,6 +7503,10 @@ function phBgmSfxRemove(fileId) {
   const ph = getCur(); if (!ph) return;
   ph.sfx = (ph.sfx || []).filter(x => x.fileId !== fileId);
   save(); renderSFX(ph); renderPhBgmSfxList();
+}
+function phBgmSfxSet(idx, field, value) {
+  const ph = getCur(); if (!ph) return;
+  if (ph.sfx?.[idx]) { ph.sfx[idx][field] = value; save(); renderSFX(ph); }
 }
 
 function renderPhBgmAlarm() {
@@ -8112,6 +8129,25 @@ function onVolChange() {
 // ═══════════════════════════════════════════════════════
 // SFX
 // ═══════════════════════════════════════════════════════
+function sfxStopById(fileId) {
+  const a = S.sfxActive[fileId];
+  if (!a) return;
+  if (a.stopMode === 'fadeout') {
+    const now = a.ctx.currentTime;
+    a.gain.gain.setValueAtTime(a.gain.gain.value, now);
+    a.gain.gain.linearRampToValueAtTime(0, now + 0.5);
+    delete S.sfxActive[fileId];
+    setTimeout(() => {
+      try { a.src.stop(); } catch(e) {}
+      if (a.btn) a.btn.classList.remove('playing');
+    }, 520);
+  } else {
+    try { a.src.stop(); } catch(e) {}
+    if (a.btn) a.btn.classList.remove('playing');
+    delete S.sfxActive[fileId];
+  }
+}
+
 function renderSFX(ph) {
   const g = qs('#sfx-grid');
   g.innerHTML = '';
@@ -8122,14 +8158,39 @@ function renderSFX(ph) {
   ph.sfx.forEach(item => {
     const btn = document.createElement('button');
     btn.className = 'sfx-btn';
-    btn.title = item.name;
+    const mode = item.playMode || 'oneshot';
+    const modeHint = mode === 'hold' ? '（押下中のみ）' : mode === 'toggle' ? '（タップでオン/オフ）' : '（一度再生）';
+    btn.title = item.name + ' ' + modeHint;
     btn.textContent = '🔊 ' + item.name;
-    btn.onclick = () => sfxPlay(item, btn);
+    if (mode === 'hold') {
+      const start = (e) => { e.preventDefault(); sfxPlay(item, btn); };
+      const stop  = ()  => sfxStopById(item.fileId);
+      btn.addEventListener('mousedown',   start);
+      btn.addEventListener('touchstart',  start, { passive: false });
+      btn.addEventListener('mouseup',     stop);
+      btn.addEventListener('mouseleave',  stop);
+      btn.addEventListener('touchend',    stop);
+      btn.addEventListener('touchcancel', stop);
+    } else {
+      btn.onclick = () => sfxPlay(item, btn);
+    }
     g.appendChild(btn);
   });
 }
+
 async function sfxPlay(item, btn) {
   if (S.mode === 'mastering') return;
+  const mode     = item.playMode || 'oneshot';
+  const stopMode = item.stopMode || 'immediate';
+
+  // toggle: 再生中なら停止
+  if (mode === 'toggle' && S.sfxActive[item.fileId]) {
+    sfxStopById(item.fileId);
+    return;
+  }
+  // 既存インスタンスがあれば停止
+  if (S.sfxActive[item.fileId]) sfxStopById(item.fileId);
+
   const ctx = audioCtx();
   if (ctx.state === 'suspended') await ctx.resume();
   if (!S.sfxBuf[item.fileId]) {
@@ -8141,8 +8202,16 @@ async function sfxPlay(item, btn) {
   src.buffer = S.sfxBuf[item.fileId];
   const gain = ctx.createGain(); gain.gain.value = 0.85;
   src.connect(gain); gain.connect(ctx.destination);
+
+  if (mode !== 'oneshot') src.loop = true;
+
   btn.classList.add('playing');
-  src.onended = () => btn.classList.remove('playing');
+  S.sfxActive[item.fileId] = { src, gain, ctx, btn, stopMode };
+
+  src.onended = () => {
+    btn.classList.remove('playing');
+    if (S.sfxActive[item.fileId]?.src === src) delete S.sfxActive[item.fileId];
+  };
   src.start(0);
 }
 
@@ -8403,6 +8472,10 @@ let editIdx = -1;
 let _editPhSfx = [];
 let _sfxInsertIdx = undefined;
 
+function editPhSfxSet(i, field, value) {
+  if (_editPhSfx[i]) { _editPhSfx[i][field] = value; }
+}
+
 function renderPhSfxList() {
   const list = qs('#ph-sfx-list'); if (!list) return;
   list.innerHTML = '';
@@ -8418,7 +8491,20 @@ function renderPhSfxList() {
   _editPhSfx.forEach((sfx, i) => {
     const el = document.createElement('div');
     el.className = 'sfx-tag';
-    el.innerHTML = `<span class="drag-handle" draggable="true">⠿</span><span style="flex:1">🔊 ${escHtml(sfx.name)}</span><button class="btn-ghost" style="padding:2px 8px;font-size:11px">✕</button>`;
+    const pm = sfx.playMode || 'oneshot';
+    const sm = sfx.stopMode || 'immediate';
+    el.innerHTML = `<span class="drag-handle" draggable="true">⠿</span>
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔊 ${escHtml(sfx.name)}</span>
+      <select class="form-control-sm" style="max-width:80px;flex-shrink:0" onchange="editPhSfxSet(${i},'playMode',this.value)">
+        <option value="oneshot"${pm==='oneshot'?' selected':''}>一度再生</option>
+        <option value="hold"${pm==='hold'?' selected':''}>押下中</option>
+        <option value="toggle"${pm==='toggle'?' selected':''}>トグル</option>
+      </select>
+      <select class="form-control-sm" style="max-width:80px;flex-shrink:0" onchange="editPhSfxSet(${i},'stopMode',this.value)">
+        <option value="immediate"${sm==='immediate'?' selected':''}>即停止</option>
+        <option value="fadeout"${sm==='fadeout'?' selected':''}>FadeOut</option>
+      </select>
+      <button class="btn-ghost" style="padding:2px 8px;font-size:11px">✕</button>`;
     el.querySelector('.drag-handle').ondragstart = (e) => { e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('sfx-idx', i); setTimeout(()=>el.classList.add('dragging'),0); };
     el.querySelector('.drag-handle').ondragend = () => qsa('#ph-sfx-list .sfx-tag').forEach(t=>t.classList.remove('dragging','drag-over-top','drag-over-bottom'));
     el.ondragover = (e) => {
@@ -8461,7 +8547,7 @@ function phaseAddNew() {
 function phaseEdit(i) {
   const ph = S.scenario.phases[i];
   editIdx = i;
-  _editPhSfx = (ph.sfx || []).map(s => ({ fileId: s.fileId, name: s.name }));
+  _editPhSfx = (ph.sfx || []).map(s => ({ fileId: s.fileId, name: s.name, playMode: s.playMode || 'oneshot', stopMode: s.stopMode || 'immediate' }));
   qs('#phase-modal-title').textContent = 'フェイズを編集';
   qs('#ph-name').value = ph.name || '';
   qs('#ph-min').value = ph.durationMin || 10;
