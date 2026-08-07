@@ -523,12 +523,13 @@
     /* ── Volume ── */
     .vol-row { display: flex; align-items: center; gap: 10px; }
     .vol-row span { font-size: 11px; color: var(--text-dim); }
-    .vol-target-toggle { display: flex; gap: 2px; }
-    .vol-target-btn {
-      padding: 2px 8px; font-size: 11px; border-radius: 4px; cursor: pointer;
-      border: 1px solid var(--border); background: transparent; color: var(--text-dim);
+    .vol-target-toggle { display: flex; }
+    #vol-target-btn {
+      font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 4px;
+      cursor: pointer; letter-spacing: .5px; border: none;
     }
-    .vol-target-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-dim); }
+    #vol-target-btn[data-target="bgm"] { background: var(--accent-dim); color: var(--accent); }
+    #vol-target-btn[data-target="se"]  { background: var(--green-13);   color: var(--green);  }
     input[type=range] {
       -webkit-appearance: none; height: 4px; background: var(--border);
       border-radius: 2px; flex: 1; padding: 0;
@@ -1210,8 +1211,7 @@
       <div class="vol-row">
         <span style="width:32px">音量</span>
         <div class="vol-target-toggle">
-          <button class="vol-target-btn active" id="vol-btn-bgm" onclick="setVolTarget('bgm')">BGM</button>
-          <button class="vol-target-btn" id="vol-btn-se" onclick="setVolTarget('se')">SE</button>
+          <button id="vol-target-btn" data-target="bgm" onclick="setVolTarget()">BGM</button>
         </div>
         <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.7">
         <span id="vol-display" style="width:36px;text-align:right">70%</span>
@@ -2120,6 +2120,7 @@ const S = {
   checkState: {},  // phaseIdx → [{ text, checked }]  (runtime, not saved)
   sfxBuf: {},
   sfxActive: {},   // fileId → { src, gain, ctx, btn, stopMode }
+  bgmVol: 0.7,
   sfxVol: 0.85,
   volTarget: 'bgm',
   drive: { ok: false, apiKey: null, folderId: null, folderName: null, files: [] },
@@ -7519,7 +7520,7 @@ async function playAlarm() {
     src.buffer = S.audio.buffers[fileId];
     src.loop   = false;
     const gain = ctx.createGain();
-    gain.gain.value = parseFloat(qs('#vol-slider').value);
+    gain.gain.value = S.bgmVol;
     src.connect(gain);
     gain.connect(ctx.destination);
     src.start(0);
@@ -8016,7 +8017,7 @@ function startSource(buf, track, phaseIdx, trackIdx, fadeIn) {
   src.loop = track.loop !== false;
 
   const gain = ctx.createGain();
-  const targetVol = parseFloat(qs('#vol-slider').value);
+  const targetVol = S.bgmVol;
   gain.gain.value = fadeIn ? 0 : targetVol;
 
   src.connect(gain);
@@ -8192,6 +8193,7 @@ function onVolChange() {
   const v = parseFloat(this.value);
   qs('#vol-display').textContent = Math.round(v*100) + '%';
   if (S.volTarget === 'bgm') {
+    S.bgmVol = v;
     if (S.audio.current?.gain) S.audio.current.gain.gain.value = v;
   } else {
     S.sfxVol = v;
@@ -8201,14 +8203,13 @@ function onVolChange() {
   }
 }
 
-function setVolTarget(target) {
-  S.volTarget = target;
-  qs('#vol-btn-bgm').classList.toggle('active', target === 'bgm');
-  qs('#vol-btn-se').classList.toggle('active', target === 'se');
+function setVolTarget() {
+  S.volTarget = S.volTarget === 'bgm' ? 'se' : 'bgm';
+  const btn = qs('#vol-target-btn');
+  btn.textContent = S.volTarget === 'bgm' ? 'BGM' : 'SE';
+  btn.dataset.target = S.volTarget;
+  const v = S.volTarget === 'bgm' ? S.bgmVol : S.sfxVol;
   const slider = qs('#vol-slider');
-  const v = target === 'bgm'
-    ? (S.audio.current?.gain ? S.audio.current.gain.gain.value : parseFloat(slider.value))
-    : S.sfxVol;
   slider.value = v;
   qs('#vol-display').textContent = Math.round(v*100) + '%';
 }
