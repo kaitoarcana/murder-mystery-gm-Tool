@@ -1089,10 +1089,7 @@
 
     /* 縦画面: タイマーパネルからdur-rowと余分ボタンを非表示 */
     body.portrait-mode #panel-timer .dur-row { display: none; }
-    body.portrait-mode #panel-timer #btn-open-sub { display: none; }
-    body.portrait-mode #panel-timer #btn-phase-fullscreen { display: none; }
     body.portrait-mode #panel-timer #btn-cond-phase { display: none; }
-    body.portrait-mode #panel-timer #btn-score-display { display: none; }
 
     /* 縦画面: 時間設定ボタン（デフォルト非表示、portrait時に表示） */
     #btn-portrait-time-settings { display: none; }
@@ -1176,17 +1173,8 @@
       </div>
       <button class="btn-ghost" id="btn-apply" style="width:100%;margin-top:10px;min-height:48px;font-size:13px">タイマーに適用</button>
     </div>
-    <button class="btn-ghost" id="btn-open-sub" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
-      📺 フェイズウィンドウを開く
-    </button>
-    <button class="btn-ghost" id="btn-phase-fullscreen" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em" onclick="requestPhaseFullscreen()">
-      ⛶ フェイズ全画面
-    </button>
     <button class="btn-ghost" id="btn-cond-phase" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
       🔀 判定連動設定
-    </button>
-    <button class="btn-ghost" id="btn-score-display" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">
-      📊 得点表示
     </button>
   </div>
 
@@ -6942,7 +6930,6 @@ function bindAll() {
   qs('#btn-mode').onclick     = toggleMode;
   qs('#btn-open-timer').onclick = toggleTimerWin;
   qs('#btn-settings').onclick = () => openModal('ov-settings');
-  qs('#btn-open-sub').onclick = toggleTimerWin;
   qs('#phase-add-tab').onclick = phaseAddNew;
 
   qs('#btn-start').onclick = timerStart;
@@ -7043,7 +7030,6 @@ function bindAll() {
 
   qs('#btn-phase-bgm').onclick  = openPhaseBgm;
   qs('#btn-cond-phase').onclick = openCondPhaseModal;
-  qs('#btn-score-display').onclick = broadcastScoreTable;
   qs('#ph-btn-sfx-add').onclick = () => { _sfxInsertIdx = undefined; openPicker('phase-sfx'); };
   qs('#ph-btn-save').onclick = phaseSave;
   qs('#ph-btn-delete').onclick = phaseDelete;
@@ -9323,9 +9309,9 @@ function closePortraitTimeModal() {
   if (!modal || modal.style.display === 'none') return;
   const durRow = document.querySelector('.dur-row');
   const timerPanel = document.getElementById('panel-timer');
-  const btnOpenSub = document.getElementById('btn-open-sub');
-  if (durRow && timerPanel && btnOpenSub) {
-    timerPanel.insertBefore(durRow, btnOpenSub);  // タイマーパネルの元の位置に戻す
+  const btnCondPhase = document.getElementById('btn-cond-phase');
+  if (durRow && timerPanel && btnCondPhase) {
+    timerPanel.insertBefore(durRow, btnCondPhase);
   }
   modal.style.display = 'none';
 }
