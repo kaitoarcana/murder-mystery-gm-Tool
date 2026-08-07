@@ -550,7 +550,7 @@
     .sfx-btn {
       padding: 12px 10px; min-height: 48px; font-size: 12px; background: var(--bg-2);
       border: 1px solid var(--border); color: var(--text-mid);
-      border-radius: var(--radius-sm); text-align: left;
+      border-radius: var(--radius-sm); text-align: left; cursor: pointer;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       transition: background-color .15s, border-color .15s, color .15s;
     }
@@ -7410,6 +7410,7 @@ function toggleMode() {
     if (ph && !ph.condMode) {
       qs('#notes-content').innerHTML = notesHtmlFromStored(ph.notes) || NOTES_EMPTY_PH;
     }
+    if (ph) renderSFX(ph); // ライブモード切替時にSEボタンを再描画
   } else {
     S.mode = 'mastering';
     window.removeEventListener('beforeunload', _liveGuard);
@@ -8183,7 +8184,6 @@ function renderSFX(ph) {
 }
 
 async function sfxPlay(item, btn) {
-  if (S.mode === 'mastering') return;
   const mode     = item.playMode || 'oneshot';
   const stopMode = item.stopMode || 'immediate';
 
