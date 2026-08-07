@@ -236,8 +236,40 @@
     body.mode-live #btn-phase-bgm { display: none; }
     body.mode-live .tab-copy { display: none !important; }
     body.mode-live #btn-cond-phase { display: none; }
+    body.mode-live #portrait-cond-btn { display: none; }
     /* Live: phase tabs not draggable */
     body.mode-live .phase-tab { cursor: default !important; }
+    /* Mastering: record/judgment are in hamburger only */
+    body.mode-mastering #btn-record { display: none; }
+    body.mode-mastering #btn-judgment-result { display: none; }
+    /* btn-open-timer always lives in hamburger, not header */
+    #btn-open-timer { display: none; }
+    /* ── Hamburger menu ── */
+    #btn-hamburger {
+      font-size: 20px; padding: 6px 12px; line-height: 1; flex-shrink: 0;
+      background: transparent; border: none; cursor: pointer;
+      color: var(--text-mid); border-radius: var(--radius-sm);
+    }
+    #btn-hamburger:hover { background: var(--bg-3); color: var(--text); }
+    #hamburger-overlay { display: none; position: fixed; inset: 0; z-index: 999; }
+    #hamburger-menu {
+      display: none; position: fixed; top: 56px; left: 0; z-index: 1000;
+      background: var(--bg-1); border: 1px solid var(--border);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      box-shadow: 4px 6px 20px rgba(0,0,0,.22);
+      min-width: 180px; padding: 6px;
+      flex-direction: column; gap: 2px;
+    }
+    #hamburger-menu.hm-open { display: flex; }
+    .hm-btn {
+      width: 100%; text-align: left; padding: 10px 14px; background: transparent;
+      border: none; border-radius: var(--radius-sm); cursor: pointer;
+      color: var(--text-mid); font-size: 14px; font-family: inherit;
+      text-decoration: none; display: block;
+    }
+    .hm-btn:hover { background: var(--bg-3); color: var(--text); }
+    body.mode-mastering .hm-live-only { display: none; }
+    body.mode-live .hm-mastering-only { display: none; }
     /* ── Phase BGM modal tabs ── */
     .phb-tab-btn {
       background: none; border: none; border-bottom: 2px solid transparent;
@@ -491,6 +523,12 @@
     /* ── Volume ── */
     .vol-row { display: flex; align-items: center; gap: 10px; }
     .vol-row span { font-size: 11px; color: var(--text-dim); }
+    .vol-target-toggle { display: flex; gap: 2px; }
+    .vol-target-btn {
+      padding: 2px 8px; font-size: 11px; border-radius: 4px; cursor: pointer;
+      border: 1px solid var(--border); background: transparent; color: var(--text-dim);
+    }
+    .vol-target-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent-dim); }
     input[type=range] {
       -webkit-appearance: none; height: 4px; background: var(--border);
       border-radius: 2px; flex: 1; padding: 0;
@@ -1069,6 +1107,7 @@
 <body>
 
 <header id="header">
+  <button id="btn-hamburger" onclick="toggleHamburger()" title="メニュー">☰</button>
   <div id="header-logo">🎭</div>
   <div id="scenario-display">シナリオ未設定</div>
   <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
@@ -1078,17 +1117,24 @@
     <button id="btn-mode" class="mastering">📝 マスタリング</button>
     <button class="btn-ghost" id="btn-open-timer">📺 フェイズ画面</button>
     <button class="btn-ghost" id="btn-record" onclick="openModal('ov-record')">📋 記録</button>
-    <button class="btn-ghost" id="btn-content" onclick="openModal('ov-content')">📋 記録設定</button>
+    <button class="btn-ghost" id="btn-content" onclick="openModal('ov-content')">📝 条件判定設定</button>
     <button class="btn-ghost" id="btn-judgment-result" onclick="openJudgmentResult()">⚖ 判定</button>
     <button class="btn-ghost" id="btn-cond-refresh" style="display:none" onclick="doCondRefresh()" title="最新の判定結果でシーン・BGMパネル・GM資料を再描画（現在のBGMと画像はそのまま維持）">🔁 再描画</button>
     <button class="btn-ghost" id="btn-settings">⚙ 設定</button>
-    <a href="help-bgm.html" target="_blank"
-       style="padding:10px 16px;text-decoration:none;font-size:14px;border-radius:6px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-dim);transition:all .15s;display:flex;align-items:center"
-       onmouseover="this.style.background='var(--bg-3)';this.style.color='var(--text)'"
-       onmouseout="this.style.background='var(--bg-2)';this.style.color='var(--text-dim)'"
-       title="BGM 使い方ガイドを開く">? ヘルプ</a>
   </div>
 </header>
+
+<!-- ハンバーガーメニュー -->
+<div id="hamburger-overlay" onclick="closeHamburger()"></div>
+<div id="hamburger-menu">
+  <button class="hm-btn" onclick="closeHamburger();toggleTimerWin()">📺 フェイズ画面</button>
+  <button class="hm-btn hm-mastering-only" onclick="closeHamburger();openModal('ov-record')">📋 記録</button>
+  <button class="hm-btn hm-mastering-only" onclick="closeHamburger();openJudgmentResult()">⚖ 判定</button>
+  <button class="hm-btn" onclick="closeHamburger();broadcastScoreTable()">📊 得点表示</button>
+  <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-content')">📝 条件判定設定</button>
+  <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-settings')">⚙ 設定</button>
+  <a class="hm-btn" href="help-bgm.html" target="_blank" onclick="closeHamburger()">? ヘルプ</a>
+</div>
 
 <nav id="phase-nav">
   <span class="nav-empty" id="nav-empty">設定からフェイズを追加してください</span>
@@ -1163,6 +1209,10 @@
       <!-- Volume -->
       <div class="vol-row">
         <span style="width:32px">音量</span>
+        <div class="vol-target-toggle">
+          <button class="vol-target-btn active" id="vol-btn-bgm" onclick="setVolTarget('bgm')">BGM</button>
+          <button class="vol-target-btn" id="vol-btn-se" onclick="setVolTarget('se')">SE</button>
+        </div>
         <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.7">
         <span id="vol-display" style="width:36px;text-align:right">70%</span>
       </div>
@@ -1193,13 +1243,6 @@
         </button>
       </div>
 
-      <!-- 縦画面のみ表示: 判定連動・得点表示ボタン（フェイズBGM設定の直下） -->
-      <div id="portrait-bgm-btns">
-        <button class="btn-ghost" onclick="requestPhaseFullscreen()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">⛶ フェイズ全画面</button>
-        <button class="btn-ghost" onclick="document.getElementById('btn-cond-phase').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">🔀 判定連動設定</button>
-        <button class="btn-ghost" onclick="document.getElementById('btn-score-display').click()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">📊 得点表示</button>
-      </div>
-
       <!-- SFX -->
       <div>
         <div class="section-title">効果音</div>
@@ -1214,6 +1257,11 @@
       <button class="btn-ghost" id="btn-phase-bgm" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em;margin-top:4px">
         🎵 フェイズBGM設定
       </button>
+    </div>
+
+    <!-- 縦画面のみ: 判定連動設定（最下部固定）-->
+    <div id="portrait-bgm-btns">
+      <button id="portrait-cond-btn" class="btn-ghost" onclick="openCondPhaseModal()" style="width:100%;padding:10px;font-size:12px;letter-spacing:0.02em">🔀 判定連動設定</button>
     </div>
   </div>
 
@@ -2072,6 +2120,8 @@ const S = {
   checkState: {},  // phaseIdx → [{ text, checked }]  (runtime, not saved)
   sfxBuf: {},
   sfxActive: {},   // fileId → { src, gain, ctx, btn, stopMode }
+  sfxVol: 0.85,
+  volTarget: 'bgm',
   drive: { ok: false, apiKey: null, folderId: null, folderName: null, files: [] },
   picker: { ctx: null, sel: null, sels: [], multi: false },
   subWin: null,
@@ -7400,7 +7450,20 @@ function applyMode() {
 // 本番モード中のうっかりブラウザ閉じを防ぐ beforeunload ガード
 function _liveGuard(e) { e.preventDefault(); e.returnValue = ''; }
 
+function toggleHamburger() {
+  const menu = qs('#hamburger-menu');
+  const overlay = qs('#hamburger-overlay');
+  const isOpen = menu.classList.toggle('hm-open');
+  overlay.style.display = isOpen ? 'block' : 'none';
+}
+
+function closeHamburger() {
+  qs('#hamburger-menu').classList.remove('hm-open');
+  qs('#hamburger-overlay').style.display = 'none';
+}
+
 function toggleMode() {
+  closeHamburger();
   const ph = getCur();
   if (S.mode === 'mastering') {
     S.mode = 'live';
@@ -8128,7 +8191,26 @@ function renderNowPlaying() {
 function onVolChange() {
   const v = parseFloat(this.value);
   qs('#vol-display').textContent = Math.round(v*100) + '%';
-  if (S.audio.current?.gain) S.audio.current.gain.gain.value = v;
+  if (S.volTarget === 'bgm') {
+    if (S.audio.current?.gain) S.audio.current.gain.gain.value = v;
+  } else {
+    S.sfxVol = v;
+    Object.values(S.sfxActive).forEach(a => {
+      try { a.gain.gain.value = v; } catch(e) {}
+    });
+  }
+}
+
+function setVolTarget(target) {
+  S.volTarget = target;
+  qs('#vol-btn-bgm').classList.toggle('active', target === 'bgm');
+  qs('#vol-btn-se').classList.toggle('active', target === 'se');
+  const slider = qs('#vol-slider');
+  const v = target === 'bgm'
+    ? (S.audio.current?.gain ? S.audio.current.gain.gain.value : parseFloat(slider.value))
+    : S.sfxVol;
+  slider.value = v;
+  qs('#vol-display').textContent = Math.round(v*100) + '%';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -8140,12 +8222,12 @@ function sfxStopById(fileId) {
   if (a.stopMode === 'fadeout') {
     const now = a.ctx.currentTime;
     a.gain.gain.setValueAtTime(a.gain.gain.value, now);
-    a.gain.gain.linearRampToValueAtTime(0, now + 0.5);
+    a.gain.gain.linearRampToValueAtTime(0, now + 3);
     delete S.sfxActive[fileId];
     setTimeout(() => {
       try { a.src.stop(); } catch(e) {}
       if (a.btn) a.btn.classList.remove('playing');
-    }, 520);
+    }, 3020);
   } else {
     try { a.src.stop(); } catch(e) {}
     if (a.btn) a.btn.classList.remove('playing');
@@ -8204,7 +8286,7 @@ async function sfxPlay(item, btn) {
   }
   const src = ctx.createBufferSource();
   src.buffer = S.sfxBuf[item.fileId];
-  const gain = ctx.createGain(); gain.gain.value = 0.85;
+  const gain = ctx.createGain(); gain.gain.value = S.sfxVol;
   src.connect(gain); gain.connect(ctx.destination);
 
   if (mode !== 'oneshot') src.loop = true;
