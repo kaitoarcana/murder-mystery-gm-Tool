@@ -523,11 +523,10 @@
     /* ── Volume ── */
     .vol-row { display: flex; align-items: center; gap: 10px; }
     .vol-row span { font-size: 11px; color: var(--text-dim); }
-    .vol-target-toggle { display: flex; }
     #vol-target-btn {
-      font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 4px;
-      cursor: pointer; letter-spacing: .5px; border: none;
-      width: 42px; text-align: center;
+      font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+      cursor: pointer; letter-spacing: .3px; border: none; flex-shrink: 0;
+      width: 62px; display: flex; align-items: center; justify-content: center;
     }
     #vol-target-btn[data-target="bgm"] { background: var(--green-13); color: var(--green); }
     #vol-target-btn[data-target="se"]  { background: oklch(52% 0.13 250 / 0.14); color: oklch(52% 0.13 250); }
@@ -1199,10 +1198,7 @@
 
       <!-- Volume -->
       <div class="vol-row">
-        <span style="width:32px">音量</span>
-        <div class="vol-target-toggle">
-          <button id="vol-target-btn" data-target="bgm" onclick="setVolTarget()">BGM</button>
-        </div>
+        <button id="vol-target-btn" data-target="bgm" onclick="setVolTarget()">BGM音量</button>
         <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.7">
         <span id="vol-display" style="width:36px;text-align:right">70%</span>
       </div>
@@ -8184,7 +8180,7 @@ function onVolChange() {
 function setVolTarget() {
   S.volTarget = S.volTarget === 'bgm' ? 'se' : 'bgm';
   const btn = qs('#vol-target-btn');
-  btn.textContent = S.volTarget === 'bgm' ? 'BGM' : 'SE';
+  btn.textContent = S.volTarget === 'bgm' ? 'BGM音量' : 'SE音量';
   btn.dataset.target = S.volTarget;
   const v = S.volTarget === 'bgm' ? S.bgmVol : S.sfxVol;
   const slider = qs('#vol-slider');
