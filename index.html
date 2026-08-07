@@ -8374,7 +8374,7 @@ function openPicker(ctx) {
   S.picker.ctx = ctx;
   S.picker.sel = null;
   S.picker.sels = [];
-  S.picker.multi = ctx === 'phase-display-scene';
+  S.picker.multi = pickerIsScene() || ['bgm-main','sfx-main','phase-bgm-new-add','phase-sfx'].includes(ctx);
   qs('#btn-confirm-pick').disabled = true;
   qs('#btn-confirm-pick').textContent = '選択';
   qs('#in-file-search').value = '';
@@ -8390,24 +8390,43 @@ function pickerConfirm() {
   if (ctx === 'bgm-main') {
     const ph = getCur();
     if (ph) {
-      if (!ph.bgm.find(x => x.fileId === f.fileId)) {
-        ph.bgm.push({ fileId: f.fileId, name: f.name, loop: true, transition: 'fade' });
-        renderBGMPanel();
-        save();
-      }
+      const files = S.picker.sels.length ? S.picker.sels : (f ? [f] : []);
+      let added = 0;
+      files.forEach(file => {
+        if (!ph.bgm.find(x => x.fileId === file.fileId)) {
+          ph.bgm.push({ fileId: file.fileId, name: file.name, loop: true, transition: 'fade' });
+          added++;
+        }
+      });
+      if (added) { renderBGMPanel(); save(); }
     }
   } else if (ctx === 'sfx-main') {
     const ph = getCur();
     if (ph) {
       if (!ph.sfx) ph.sfx = [];
-      if (!ph.sfx.find(x => x.fileId === f.fileId)) { ph.sfx.push(f); renderSFX(ph); renderPhBgmSfxList(); save(); }
+      const files = S.picker.sels.length ? S.picker.sels : (f ? [f] : []);
+      let added = 0;
+      files.forEach(file => {
+        if (!ph.sfx.find(x => x.fileId === file.fileId)) {
+          ph.sfx.push({ fileId: file.fileId, name: file.name });
+          added++;
+        }
+      });
+      if (added) { renderSFX(ph); renderPhBgmSfxList(); save(); }
     }
   } else if (ctx === 'phase-bgm-new-add') {
     const ph = getCur();
     if (ph) {
       if (!ph.bgm) ph.bgm = [];
-      if (!ph.bgm.find(x => x.fileId === f.fileId)) {
-        ph.bgm.push({ fileId: f.fileId, name: f.name, loop: true, transition: 'fade', audioOutput: '' });
+      const files = S.picker.sels.length ? S.picker.sels : (f ? [f] : []);
+      let added = 0;
+      files.forEach(file => {
+        if (!ph.bgm.find(x => x.fileId === file.fileId)) {
+          ph.bgm.push({ fileId: file.fileId, name: file.name, loop: true, transition: 'fade', audioOutput: '' });
+          added++;
+        }
+      });
+      if (added) {
         renderPhBgmList();
         _updatePhBgmSelect('phb-timer-bgm-idx');
         _updatePhBgmSelect('phb-incoming-bgm-idx');
@@ -8415,7 +8434,18 @@ function pickerConfirm() {
       }
     }
   } else if (ctx === 'phase-sfx') {
-    phSFXAdd(f);
+    if (S.picker.sels.length > 0) {
+      const items = S.picker.sels.map(file => ({ fileId: file.fileId, name: file.name, playMode: 'oneshot', stopMode: 'immediate' }));
+      if (_sfxInsertIdx !== undefined) {
+        _editPhSfx.splice(_sfxInsertIdx, 0, ...items);
+        _sfxInsertIdx = undefined;
+      } else {
+        _editPhSfx.push(...items);
+      }
+      renderPhSfxList();
+    } else {
+      phSFXAdd(f);
+    }
   } else if (ctx === 'alarm-global') {
     S.scenario.alarmFileId   = f.fileId;
     S.scenario.alarmFileName = f.name;
@@ -8605,7 +8635,7 @@ function renderPhBgmList() {
     const el = document.createElement('div');
     el.className = 'ph-bgm-card';
     el.innerHTML = `
-      <span style="font-size:13px">🎵</span>
+      <span class="drag-handle" draggable="true">⠿</span>
       <span class="ph-bgm-name" title="${escHtml(track.name)}">${escHtml(track.name)}</span>
       <button class="track-loop-btn${loopOn ? ' on' : ''}" onclick="phBgmToggleLoop(${i})" title="ループ: ${loopOn?'ON':'OFF'}">🔄</button>
       <select class="track-trans-sel" onchange="phBgmSetTrans(${i},this.value)" title="切替挙動">
@@ -8616,10 +8646,33 @@ function renderPhBgmList() {
       <select class="track-trans-sel" onchange="phBgmSetDevice(${i},this.value)" title="音声出力デバイス" style="max-width:110px">
         ${deviceOptions(track.audioOutput || '')}
       </select>
-      <button class="btn-ghost" onclick="phBgmMove(${i},-1)" ${i===0?'disabled':''} title="上へ">↑</button>
-      <button class="btn-ghost" onclick="phBgmMove(${i},1)" ${i===bgm.length-1?'disabled':''} title="下へ">↓</button>
       <button class="btn-ghost" onclick="phBgmRemove(${i})" title="削除">✕</button>
     `;
+    const handle = el.querySelector('.drag-handle');
+    handle.ondragstart = (e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('bgm-idx', String(i)); setTimeout(() => el.classList.add('dragging'), 0); };
+    handle.ondragend   = () => qsa('.ph-bgm-card').forEach(c => c.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom'));
+    el.ondragover = (e) => {
+      if (!e.dataTransfer.types.includes('bgm-idx')) return;
+      e.preventDefault();
+      const mid = el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2;
+      el.classList.toggle('drag-over-top',    e.clientY < mid);
+      el.classList.toggle('drag-over-bottom', e.clientY >= mid);
+    };
+    el.ondragleave = () => el.classList.remove('drag-over-top', 'drag-over-bottom');
+    el.ondrop = (e) => {
+      e.preventDefault();
+      const isTop = el.classList.contains('drag-over-top');
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+      const from = parseInt(e.dataTransfer.getData('bgm-idx'));
+      if (isNaN(from) || from === i) return;
+      const [item] = ph.bgm.splice(from, 1);
+      const to = from < i ? (isTop ? i - 1 : i) : (isTop ? i : i + 1);
+      ph.bgm.splice(Math.max(0, to), 0, item);
+      renderPhBgmList();
+      _updatePhBgmSelect('phb-timer-bgm-idx');
+      _updatePhBgmSelect('phb-incoming-bgm-idx');
+      renderBGMPanel(); save();
+    };
     list.appendChild(el);
   });
 }
