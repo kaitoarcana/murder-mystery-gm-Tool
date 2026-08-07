@@ -253,10 +253,10 @@
     #btn-hamburger:hover { background: var(--bg-3); color: var(--text); }
     #hamburger-overlay { display: none; position: fixed; inset: 0; z-index: 999; }
     #hamburger-menu {
-      display: none; position: fixed; top: 56px; left: 0; z-index: 1000;
+      display: none; position: fixed; top: 56px; right: 0; z-index: 1000;
       background: var(--bg-1); border: 1px solid var(--border);
-      border-radius: 0 var(--radius) var(--radius) 0;
-      box-shadow: 4px 6px 20px rgba(0,0,0,.22);
+      border-radius: var(--radius) 0 0 var(--radius);
+      box-shadow: -4px 6px 20px rgba(0,0,0,.22);
       min-width: 180px; padding: 6px;
       flex-direction: column; gap: 2px;
     }
@@ -1107,7 +1107,6 @@
 <body>
 
 <header id="header">
-  <button id="btn-hamburger" onclick="toggleHamburger()" title="メニュー">☰</button>
   <div id="header-logo">🎭</div>
   <div id="scenario-display">シナリオ未設定</div>
   <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
@@ -1121,6 +1120,7 @@
     <button class="btn-ghost" id="btn-judgment-result" onclick="openJudgmentResult()">⚖ 判定</button>
     <button class="btn-ghost" id="btn-cond-refresh" style="display:none" onclick="doCondRefresh()" title="最新の判定結果でシーン・BGMパネル・GM資料を再描画（現在のBGMと画像はそのまま維持）">🔁 再描画</button>
     <button class="btn-ghost" id="btn-settings">⚙ 設定</button>
+    <button id="btn-hamburger" onclick="toggleHamburger()" title="メニュー">☰</button>
   </div>
 </header>
 
