@@ -8183,8 +8183,8 @@ async function sfxPlay(item, btn) {
   const mode     = item.playMode || 'oneshot';
   const stopMode = item.stopMode || 'immediate';
 
-  // toggle: 再生中なら停止
-  if (mode === 'toggle' && S.sfxActive[item.fileId]) {
+  // oneshot / toggle: 再生中にもう一度押したら停止
+  if ((mode === 'oneshot' || mode === 'toggle') && S.sfxActive[item.fileId]) {
     sfxStopById(item.fileId);
     return;
   }
