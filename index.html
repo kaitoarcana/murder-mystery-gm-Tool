@@ -1548,9 +1548,15 @@
         <button class="btn-ghost" onclick="pickOutputDevice()" style="font-size:12px">🔄 出力デバイス一覧を取得…</button>
       </div>
       <div class="form-group">
-        <label class="form-label">BGM / SFX 出力デバイス（デフォルト）</label>
+        <label class="form-label">BGM 出力デバイス（デフォルト）</label>
         <select class="form-control" id="sel-default-device">
           <option value="">システムデフォルト</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SE 出力デバイス</label>
+        <select class="form-control" id="sel-se-device">
+          <option value="">BGMと同じ（デフォルト）</option>
         </select>
       </div>
       <div class="form-group">
@@ -2093,7 +2099,7 @@ const S = {
     loadingPromises: {},// fileId → Promise (in-flight prefetch)
     loadingKey: null    // 'phaseIdx-trackIdx' while actively loading for playback
   },
-  outputPref: { default: '', video: '' }, // audio output device IDs
+  outputPref: { default: '', video: '', se: '' }, // audio output device IDs
   checkState: {},  // phaseIdx → [{ text, checked }]  (runtime, not saved)
   sfxBuf: {},
   sfxActive: {},   // fileId → { src, gain, ctx, btn, stopMode }
@@ -5370,7 +5376,7 @@ function load() {
   } catch(e) {}
   try {
     const op = localStorage.getItem('gm_output_pref');
-    if (op) S.outputPref = { default: '', video: '', ...JSON.parse(op) };
+    if (op) S.outputPref = { default: '', video: '', se: '', ...JSON.parse(op) };
   } catch(e) {}
   try {
     const kd = localStorage.getItem('gm_audio_devices');
@@ -7763,18 +7769,20 @@ async function pickOutputDevice() {
 
 function renderAudioDeviceSelects() {
   const selDef = qs('#sel-default-device');
+  const selSe  = qs('#sel-se-device');
   const selVid = qs('#sel-video-device');
-  if (!selDef && !selVid) return;
-  const makeOpts = (sel) => {
-    let h = `<option value="">システムデフォルト</option>`;
+  if (!selDef && !selSe && !selVid) return;
+  const makeOpts = (sel, emptyLabel) => {
+    let h = `<option value="">${emptyLabel}</option>`;
     (S.audio.devices || []).forEach(d => {
       const label = d.label || `デバイス (${d.deviceId.slice(0, 8)}…)`;
       h += `<option value="${escHtml(d.deviceId)}"${d.deviceId === sel ? ' selected' : ''}>${escHtml(label)}</option>`;
     });
     return h;
   };
-  if (selDef) selDef.innerHTML = makeOpts(S.outputPref.default || '');
-  if (selVid) selVid.innerHTML = makeOpts(S.outputPref.video   || '');
+  if (selDef) selDef.innerHTML = makeOpts(S.outputPref.default || '', 'システムデフォルト');
+  if (selSe)  selSe.innerHTML  = makeOpts(S.outputPref.se      || '', 'BGMと同じ（デフォルト）');
+  if (selVid) selVid.innerHTML = makeOpts(S.outputPref.video   || '', 'システムデフォルト');
 }
 
 function deviceOptions(selected) {
@@ -8253,7 +8261,7 @@ async function sfxPlay(item, btn) {
   // 既存インスタンスがあれば停止
   if (S.sfxActive[item.fileId]) sfxStopById(item.fileId);
 
-  const ctx = audioCtx();
+  const ctx = S.outputPref.se ? audioCtxFor(S.outputPref.se) : audioCtx();
   if (ctx.state === 'suspended') await ctx.resume();
   if (!S.sfxBuf[item.fileId]) {
     const buf = await loadAudio(item.fileId);
@@ -8885,9 +8893,11 @@ function phaseDelete() {
 function saveSettings() {
   S.scenario.name = qs('#in-scenario-name').value.trim();
   const newDef = qs('#sel-default-device')?.value || '';
+  const newSe  = qs('#sel-se-device')?.value      || '';
   const newVid = qs('#sel-video-device')?.value   || '';
   const defChanged = newDef !== S.outputPref.default;
   S.outputPref.default = newDef;
+  S.outputPref.se      = newSe;
   S.outputPref.video   = newVid;
   localStorage.setItem('gm_output_pref', JSON.stringify(S.outputPref));
   if (defChanged && S.audio.ctx?.setSinkId) {
