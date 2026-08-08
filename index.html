@@ -7923,7 +7923,7 @@ async function loadAudio(fileId, silent = false) {
         ab = S.audio.rawBuffers[fileId].slice(0);
       } else {
         // 事前フェッチなし → 通常フェッチ（最大3回リトライ）
-        const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${encodeURIComponent(S.drive.apiKey)}`;
+        const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&acknowledgeAbuse=true&supportsAllDrives=true&key=${encodeURIComponent(S.drive.apiKey)}`;
         let lastErr;
         for (let attempt = 0; attempt < 3; attempt++) {
           if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 2000));
@@ -7944,27 +7944,31 @@ async function loadAudio(fileId, silent = false) {
   } catch(e) {
     if (!silent) {
       if (e instanceof TypeError) {
-        // CORS またはネットワーク障害 → メタデータ + permissionsで原因を切り分け
+        // CORS またはネットワーク障害 → APIキーでは共有設定を判別不可のため、
+        // メタデータの取得可否だけでAPIキー自体の有効性を確認する
         try {
           const metaR = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,permissions(role,type)&key=${encodeURIComponent(S.drive.apiKey)}`
+            `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name&key=${encodeURIComponent(S.drive.apiKey)}`
           );
           if (metaR.ok) {
-            const meta = await metaR.json();
-            const perms = meta.permissions || [];
-            const isPublic = perms.some(p => p.type === 'anyone' || p.type === 'anyoneWithLink');
-            if (isPublic) {
-              notify('音声取得失敗: Googleの一時的な障害の可能性があります。数分待って再試行するか、ページを再読み込みしてください', 'err');
-            } else {
-              notify('音声取得失敗: ファイルの共有設定が「リンクを知っている全員（閲覧可）」になっていません。Driveで確認してください', 'err');
-            }
+            // ファイル自体は存在・APIキーも有効 → ダウンロードのみが失敗
+            notify('音声取得失敗: ファイルのダウンロードに失敗しました。①共有設定が「リンクを知っている全員（閲覧者）」か確認 ②ページを再読み込みして再試行してください', 'err');
           } else if (metaR.status === 403) {
             notify('音声取得失敗: APIキーのアクセス権限がありません（Google Cloud ConsoleのAPIキー設定を確認）', 'err');
+          } else if (metaR.status === 404) {
+            notify('音声取得失敗: ファイルが見つかりません（ファイルIDを確認してください）', 'err');
           } else {
-            notify('音声取得失敗: ダウンロード失敗 / メタデータ HTTP ' + metaR.status, 'err');
+            notify('音声取得失敗: HTTP ' + metaR.status, 'err');
           }
         } catch {
           notify('音声取得失敗: ネットワークに接続できません', 'err');
+        }
+      } else if (e.message?.startsWith('HTTP ')) {
+        const status = e.message.slice(5);
+        if (status === '403') {
+          notify('音声取得失敗: アクセス拒否（共有設定が「リンクを知っている全員（閲覧者）」か確認してください）', 'err');
+        } else {
+          notify('音声読み込みエラー: HTTP ' + status, 'err');
         }
       } else {
         notify('音声読み込みエラー: ' + e.message, 'err');
