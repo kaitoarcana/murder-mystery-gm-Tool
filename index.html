@@ -834,6 +834,21 @@
     body.mode-live .track-loop-btn  { display: none; }
     body.mode-live .track-trans-sel { display: none; }
     body.mode-live .track-del-btn   { display: none; }
+    body.mode-live .track-gain-area { display: none; }
+    /* Track gain control */
+    .track-gain-area { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+    .track-gain-input {
+      width: 42px; padding: 4px 3px; font-size: 11px; text-align: right;
+      background: var(--bg-2); border: 1px solid var(--border); color: var(--text);
+      border-radius: 4px;
+    }
+    .track-gain-pct { font-size: 10px; color: var(--text-dim); }
+    .track-norm-btn {
+      width: 26px; height: 26px; padding: 0; font-size: 10px; font-weight: 700;
+      background: transparent; border: 1px solid var(--border); border-radius: 4px;
+      cursor: pointer; color: var(--text-dim); flex-shrink: 0;
+    }
+    .track-norm-btn:hover { background: var(--green-13); color: var(--green); border-color: var(--green-27); }
     body.mode-live .track-name {
       font-size: 15px; font-weight: 600; color: var(--text);
     }
@@ -8000,7 +8015,7 @@ function startSource(buf, track, phaseIdx, trackIdx, fadeIn) {
   src.loop = track.loop !== false;
 
   const gain = ctx.createGain();
-  const targetVol = S.bgmVol;
+  const targetVol = S.bgmVol * (track.gain ?? 1.0);
   gain.gain.value = fadeIn ? 0 : targetVol;
 
   src.connect(gain);
@@ -8097,6 +8112,57 @@ function removeBgmTrack(phaseIdx, trackIdx) {
 }
 
 // ═══════════════════════════════════════════════════════
+// Track Gain / Normalization
+// ═══════════════════════════════════════════════════════
+function setTrackGain(phaseIdx, trackIdx, pct) {
+  const track = S.scenario.phases[phaseIdx]?.bgm?.[trackIdx];
+  if (!track) return;
+  track.gain = Math.round(Math.min(400, Math.max(10, parseInt(pct) || 100)) / 100 * 1000) / 1000;
+  if (S.audio.current?.phaseIdx === phaseIdx && S.audio.current?.trackIdx === trackIdx) {
+    if (S.audio.current.gain) S.audio.current.gain.gain.value = S.bgmVol * track.gain;
+  }
+  save();
+}
+
+async function analyzePeak(fileId) {
+  let buf = S.audio.buffers[fileId];
+  if (!buf) {
+    buf = await loadAudio(fileId);
+    if (!buf) return null;
+    S.audio.buffers[fileId] = buf;
+  }
+  let peak = 0;
+  for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < data.length; i++) {
+      const abs = Math.abs(data[i]);
+      if (abs > peak) peak = abs;
+    }
+  }
+  return peak;
+}
+
+async function autoNormalizeTrack(phaseIdx, trackIdx, btn) {
+  const track = S.scenario.phases[phaseIdx]?.bgm?.[trackIdx];
+  if (!track?.fileId) return;
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    const peak = await analyzePeak(track.fileId);
+    if (peak && peak > 0) {
+      const TARGET = 0.891; // -1 dBFS
+      track.gain = Math.round(Math.min(4.0, Math.max(0.1, TARGET / peak)) * 1000) / 1000;
+      if (S.audio.current?.phaseIdx === phaseIdx && S.audio.current?.trackIdx === trackIdx) {
+        if (S.audio.current.gain) S.audio.current.gain.gain.value = S.bgmVol * track.gain;
+      }
+      save();
+      renderBGMPanel();
+    }
+  } finally {
+    if (btn) { btn.textContent = 'A'; btn.disabled = false; }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // BGM Panel Rendering
 // ═══════════════════════════════════════════════════════
 function renderBGMPanel() {
@@ -8119,8 +8185,9 @@ function renderBGMPanel() {
       const isPrefetching = !S.audio.buffers[track.fileId] &&
                             !S.audio.rawBuffers?.[track.fileId] &&
                             !!S.audio.loadingPromises?.[track.fileId];
-      const loopOn = track.loop !== false;
-      const trans  = track.transition || 'fade';
+      const loopOn  = track.loop !== false;
+      const trans   = track.transition || 'fade';
+      const gainPct = Math.round((track.gain ?? 1.0) * 100);
 
       const card = document.createElement('div');
       const classes = ['bgm-track-card'];
@@ -8148,6 +8215,12 @@ function renderBGMPanel() {
           <option value="fade"${trans==='fade'?' selected':''}>↓ フェード</option>
           <option value="crossfade"${trans==='crossfade'?' selected':''}>⇌ クロス</option>
         </select>
+        <div class="track-gain-area" onclick="event.stopPropagation()">
+          <input type="number" class="track-gain-input" min="10" max="400" value="${gainPct}"
+                 onchange="setTrackGain(${S.curPhase},${i},this.value)" title="トラック音量 (%)">
+          <span class="track-gain-pct">%</span>
+          <button class="track-norm-btn" onclick="autoNormalizeTrack(${S.curPhase},${i},this)" title="ピーク自動正規化">A</button>
+        </div>
         <button class="track-del-btn" onclick="event.stopPropagation();removeBgmTrack(${S.curPhase},${i})" title="削除">✕</button>
       `;
       list.appendChild(card);
@@ -8177,7 +8250,11 @@ function onVolChange() {
   qs('#vol-display').textContent = Math.round(v*100) + '%';
   if (S.volTarget === 'bgm') {
     S.bgmVol = v;
-    if (S.audio.current?.gain) S.audio.current.gain.gain.value = v;
+    if (S.audio.current?.gain) {
+      const cur = S.audio.current;
+      const trackGain = S.scenario.phases[cur.phaseIdx]?.bgm?.[cur.trackIdx]?.gain ?? 1.0;
+      cur.gain.gain.value = v * trackGain;
+    }
   } else {
     S.sfxVol = v;
     Object.values(S.sfxActive).forEach(a => {
