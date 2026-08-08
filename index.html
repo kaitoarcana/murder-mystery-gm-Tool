@@ -7261,7 +7261,8 @@ function selectPhase(i) {
 
   if (S.mode === 'live') {
     if (outgoing === null || outgoing === 'maintain') {
-      // No previous phase, or previous phase keeps BGM → ignore incoming
+      // 前フェイズが「演奏を維持」→ 再生中なら維持。何も流れていない場合は incoming を尊重する
+      if (wantPlay && !S.audio.current) autoPlayPhase(i, inBgmIdx);
     } else if (outgoing === 'fadeout') {
       if (S.audio.current) {
         delayDisplay = true; // フェード完了後に表示を切り替える
