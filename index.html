@@ -1753,17 +1753,28 @@
     <div class="modal-bd phb-tab-panel" id="phb-panel-play" style="display:none;flex-direction:column;gap:12px">
       <div style="background:var(--bg-0);border:1px solid var(--border);border-radius:var(--radius);padding:12px">
         <label class="form-label">前のフェイズから来たときの動作</label>
-        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">前のフェイズが「演奏を維持」の場合はこの設定を無視します</div>
-        <select class="form-control" id="phb-incoming-action" onchange="onPhBgmIncomingChange()">
-          <option value="nothing">なにもしない（デフォルト）</option>
-          <option value="play-bgm">BGMを再生する</option>
-          <option value="play-video">動画ファイルを再生する</option>
-        </select>
-        <div id="phb-incoming-bgm-row" style="display:none;margin-top:8px">
-          <label class="form-label">再生するBGM</label>
-          <select class="form-control" id="phb-incoming-bgm-idx" onchange="phBgmSave()"></select>
-        </div>
-        <div id="phb-incoming-video-row" style="display:none;margin-top:8px">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">前のフェイズが「演奏を維持」かつBGM再生中の場合はこの設定を無視します</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="radio" name="phb-incoming" value="nothing" onchange="onPhBgmIncomingChange()" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+            <span style="font-size:13px">なにもしない</span>
+          </label>
+          <div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="radio" name="phb-incoming" value="play-bgm" onchange="onPhBgmIncomingChange()" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+              <span style="font-size:13px">BGMを再生する</span>
+            </label>
+            <div id="phb-incoming-bgm-row" style="display:none;margin-top:8px;margin-left:26px">
+              <label class="form-label">再生するBGM</label>
+              <select class="form-control" id="phb-incoming-bgm-idx" onchange="phBgmSave()"></select>
+            </div>
+          </div>
+          <div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <input type="radio" name="phb-incoming" value="play-video" onchange="onPhBgmIncomingChange()" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+              <span style="font-size:13px">動画ファイルを再生する</span>
+            </label>
+            <div id="phb-incoming-video-row" style="display:none;margin-top:8px;margin-left:26px">
           <div style="margin-bottom:8px">
             <label class="form-label">動画ファイル</label>
             <div style="display:flex;align-items:center;gap:8px">
@@ -1802,15 +1813,16 @@
               <span style="font-size:13px">動画終了時にウィンドウを閉じる</span>
             </label>
           </div>
-        </div>
+          </div><!-- /play-video block -->
+        </div><!-- /radio group -->
       </div>
       <div style="background:var(--bg-0);border:1px solid var(--border);border-radius:var(--radius);padding:12px">
         <label class="form-label">次のフェイズに行く時の動作</label>
         <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">このフェイズから別のフェイズに切り替えるとき、演奏中のBGMをどう扱うか</div>
         <select class="form-control" id="phb-outgoing-action" onchange="phBgmSave()">
-          <option value="maintain">演奏を維持する</option>
           <option value="fadeout">フェイドアウトして停止</option>
           <option value="stop">即座に停止</option>
+          <option value="maintain">演奏を維持する</option>
         </select>
       </div>
     </div>
@@ -5290,7 +5302,7 @@ function migrate(scenario) {
       ph.bgm = [{ fileId: ph.bgm.fileId, name: ph.bgm.name, loop: true, transition: 'fade' }];
     }
     if (!ph.bgm) ph.bgm = [];
-    if (ph.outgoingAction === undefined) ph.outgoingAction = 'maintain';
+    if (ph.outgoingAction === undefined) ph.outgoingAction = 'fadeout';
     if (ph.incomingAction === undefined) ph.incomingAction = 'nothing';
     if (ph.incomingBgmIdx === undefined) ph.incomingBgmIdx = 0;
     if (ph.timerStartBgm === undefined) ph.timerStartBgm = false;
@@ -7251,7 +7263,7 @@ function selectPhase(i) {
   const srcPh  = (prevIdx >= 0 && prevIdx < S.scenario.phases.length) ? S.scenario.phases[prevIdx] : null;
   const destPh = S.scenario.phases[i];
 
-  const outgoing   = srcPh ? (srcPh.outgoingAction || 'maintain') : null;
+  const outgoing   = srcPh ? (srcPh.outgoingAction || 'fadeout') : null;
   const incoming   = destPh.incomingAction || 'nothing';
   const inBgmIdx   = destPh.incomingBgmIdx  || 0;
   const wantPlay   = incoming === 'play-bgm';
@@ -8811,10 +8823,12 @@ function openPhaseBgm() {
   qs('#phb-timer-bgm-on').checked        = ph.timerStartBgm    || false;
   qs('#phb-timer-bgm-row').style.display = ph.timerStartBgm    ? 'block' : 'none';
   qs('#phb-timer-stop-action').value     = ph.timerStopAction  || 'nothing';
-  qs('#phb-outgoing-action').value       = ph.outgoingAction   || 'maintain';
-  qs('#phb-incoming-action').value       = ph.incomingAction   || 'nothing';
-  qs('#phb-incoming-bgm-row').style.display   = ph.incomingAction === 'play-bgm'   ? 'block' : 'none';
-  qs('#phb-incoming-video-row').style.display = ph.incomingAction === 'play-video' ? 'block' : 'none';
+  qs('#phb-outgoing-action').value       = ph.outgoingAction   || 'fadeout';
+  const _inAct = ph.incomingAction || 'nothing';
+  const _inRadio = qs(`input[name="phb-incoming"][value="${_inAct}"]`);
+  if (_inRadio) _inRadio.checked = true;
+  qs('#phb-incoming-bgm-row').style.display   = _inAct === 'play-bgm'   ? 'block' : 'none';
+  qs('#phb-incoming-video-row').style.display = _inAct === 'play-video' ? 'block' : 'none';
   qs('#phb-video-name').textContent      = ph.incomingVideoFileName || '未選択';
   qs('#phb-video-fullscreen').value      = ph.incomingVideoFullscreen ? '1' : '0';
   qs('#phb-video-start').value           = ph.incomingVideoStart != null && ph.incomingVideoStart !== 0 ? ph.incomingVideoStart : '';
@@ -8922,7 +8936,7 @@ function phBgmSave() {
   ph.timerStartBgmIdx       = parseInt(qs('#phb-timer-bgm-idx').value)    || 0;
   ph.timerStopAction        = qs('#phb-timer-stop-action').value;
   ph.outgoingAction         = qs('#phb-outgoing-action').value;
-  ph.incomingAction         = qs('#phb-incoming-action').value;
+  ph.incomingAction         = qs('input[name="phb-incoming"]:checked')?.value || 'nothing';
   ph.incomingBgmIdx         = parseInt(qs('#phb-incoming-bgm-idx').value) || 0;
   ph.incomingVideoFullscreen = qs('#phb-video-fullscreen').value === '1';
   ph.incomingVideoStart     = parseFloat(qs('#phb-video-start').value) || 0;
@@ -8937,7 +8951,7 @@ function onPhBgmTimerChange() {
   phBgmSave();
 }
 function onPhBgmIncomingChange() {
-  const v = qs('#phb-incoming-action').value;
+  const v = qs('input[name="phb-incoming"]:checked')?.value || 'nothing';
   qs('#phb-incoming-bgm-row').style.display   = v === 'play-bgm'   ? 'block' : 'none';
   qs('#phb-incoming-video-row').style.display = v === 'play-video' ? 'block' : 'none';
   phBgmSave();
@@ -8964,7 +8978,7 @@ function phaseSave() {
     durationMin: parseInt(qs('#ph-min').value) || 0,
     durationSec: parseInt(qs('#ph-sec').value) || 0,
     bgm:                    prev ? [...(prev.bgm || [])] : [],
-    outgoingAction:         prev ? (prev.outgoingAction  || 'maintain') : 'maintain',
+    outgoingAction:         prev ? (prev.outgoingAction  || 'fadeout') : 'fadeout',
     incomingAction:         prev ? (prev.incomingAction  || 'nothing')  : 'nothing',
     incomingBgmIdx:         prev ? (prev.incomingBgmIdx  || 0)          : 0,
     incomingVideoFileId:    prev ? (prev.incomingVideoFileId   || null)  : null,
