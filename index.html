@@ -7934,7 +7934,33 @@ async function loadAudio(fileId, silent = false) {
     delete S.audio.rawBuffers[fileId]; // デコード済みのため生データは解放
     return decoded;
   } catch(e) {
-    if (!silent) notify('音声読み込みエラー: ' + e.message, 'err');
+    if (!silent) {
+      if (e instanceof TypeError && e.message.includes('fetch')) {
+        // CORS またはネットワーク障害 → ファイルのメタデータで原因を切り分け
+        try {
+          const metaR = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,shared&key=${encodeURIComponent(S.drive.apiKey)}`
+          );
+          if (metaR.ok) {
+            const meta = await metaR.json();
+            const shared = meta.shared;
+            if (shared === false) {
+              notify('音声取得失敗: ファイルの共有設定を「リンクを知っている全員が閲覧可」にしてください', 'err');
+            } else {
+              notify('音声取得失敗: 一時的なネットワークエラーの可能性があります。しばらく待って再試行してください', 'err');
+            }
+          } else if (metaR.status === 403) {
+            notify('音声取得失敗: APIキーのアクセス権限がありません（Google Cloud ConsoleのAPIキー設定を確認）', 'err');
+          } else {
+            notify('音声取得失敗: ' + e.message + ' (meta:' + metaR.status + ')', 'err');
+          }
+        } catch {
+          notify('音声取得失敗: ネットワークに接続できません', 'err');
+        }
+      } else {
+        notify('音声読み込みエラー: ' + e.message, 'err');
+      }
+    }
     return null;
   }
 }
