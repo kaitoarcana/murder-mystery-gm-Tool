@@ -1475,6 +1475,11 @@
           <div class="form-hint">Google Cloud Console → 認証情報 → 「APIキーを作成」で取得できます</div>
         </div>
         <div class="form-group">
+          <label class="form-label">プロキシ URL <span style="font-weight:400;color:var(--text-dim)">（CORS回避用・省略可）</span></label>
+          <input type="text" class="form-control" id="in-proxy-url" placeholder="https://your-worker.workers.dev">
+          <div class="form-hint">GitHub Pages から音声が取得できない場合に使用します。<a href="help-bgm.html#proxy" target="_blank" style="color:var(--accent)">設定方法はヘルプを参照</a></div>
+        </div>
+        <div class="form-group">
           <label class="form-label">共有フォルダ URL またはフォルダ ID</label>
           <input type="text" class="form-control" id="in-folder-url"
                  placeholder="https://drive.google.com/drive/folders/… または フォルダID">
@@ -2121,7 +2126,7 @@ const S = {
   bgmVol: 0.7,
   sfxVol: 0.85,
   volTarget: 'bgm',
-  drive: { ok: false, apiKey: null, folderId: null, folderName: null, files: [] },
+  drive: { ok: false, apiKey: null, folderId: null, folderName: null, files: [], proxyUrl: '' },
   picker: { ctx: null, sel: null, sels: [], multi: false },
   subWin: null,
   bc: null,
@@ -5364,6 +5369,9 @@ function save() {
   else           localStorage.removeItem('gm_api_key');
   if (folderUrl) localStorage.setItem('gm_folder_url', folderUrl);
   else           localStorage.removeItem('gm_folder_url');
+  const proxyUrl = qs('#in-proxy-url').value.trim();
+  if (proxyUrl) { localStorage.setItem('gm_proxy_url', proxyUrl); S.drive.proxyUrl = proxyUrl; }
+  else          { localStorage.removeItem('gm_proxy_url'); S.drive.proxyUrl = ''; }
   const oauthId = qs('#in-oauth-client-id')?.value.trim() || '';
   if (oauthId) localStorage.setItem('gm_oauth_client_id', oauthId);
   else         localStorage.removeItem('gm_oauth_client_id');
@@ -5383,6 +5391,8 @@ function load() {
   if (apiKey) { qs('#in-api-key').value = apiKey; S.drive.apiKey = apiKey; }
   const folderUrl = localStorage.getItem('gm_folder_url');
   if (folderUrl) qs('#in-folder-url').value = folderUrl;
+  const proxyUrl = localStorage.getItem('gm_proxy_url');
+  if (proxyUrl) { qs('#in-proxy-url').value = proxyUrl; S.drive.proxyUrl = proxyUrl; }
   const oauthId = localStorage.getItem('gm_oauth_client_id');
   if (oauthId) { const el = qs('#in-oauth-client-id'); if (el) el.value = oauthId; }
   try {
@@ -7824,7 +7834,9 @@ function renderVideoDeviceSelect(selected) {
 function prefetchAudio(fileId) {
   if (!fileId || !S.drive.apiKey) return;
   if (S.audio.buffers[fileId] || S.audio.rawBuffers[fileId] || S.audio.loadingPromises[fileId]) return;
-  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${encodeURIComponent(S.drive.apiKey)}`;
+  const url = S.drive.proxyUrl
+    ? `${S.drive.proxyUrl}?id=${encodeURIComponent(fileId)}&key=${encodeURIComponent(S.drive.apiKey)}`
+    : `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${encodeURIComponent(S.drive.apiKey)}`;
   const p = fetch(url).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)
     .then(ab => {
       delete S.audio.loadingPromises[fileId];
@@ -7923,7 +7935,9 @@ async function loadAudio(fileId, silent = false) {
         ab = S.audio.rawBuffers[fileId].slice(0);
       } else {
         // 事前フェッチなし → 通常フェッチ（最大3回リトライ）
-        const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&acknowledgeAbuse=true&supportsAllDrives=true&key=${encodeURIComponent(S.drive.apiKey)}`;
+        const url = S.drive.proxyUrl
+          ? `${S.drive.proxyUrl}?id=${encodeURIComponent(fileId)}&key=${encodeURIComponent(S.drive.apiKey)}`
+          : `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&acknowledgeAbuse=true&supportsAllDrives=true&key=${encodeURIComponent(S.drive.apiKey)}`;
         let lastErr;
         for (let attempt = 0; attempt < 3; attempt++) {
           if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 2000));
@@ -8474,6 +8488,7 @@ function driveClear() {
   localStorage.removeItem('gm_folder_meta');
   updateDriveUI(false);
   notify('Drive設定をクリアしました');
+  // プロキシURLはクリアしない（Drive接続とは独立した設定）
 }
 
 function updateDriveUI(ok) {
