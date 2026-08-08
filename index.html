@@ -8117,7 +8117,9 @@ function removeBgmTrack(phaseIdx, trackIdx) {
 function setTrackGain(phaseIdx, trackIdx, pct) {
   const track = S.scenario.phases[phaseIdx]?.bgm?.[trackIdx];
   if (!track) return;
-  track.gain = Math.round(Math.min(400, Math.max(10, parseInt(pct) || 100)) / 100 * 1000) / 1000;
+  const n = parseInt(pct);
+  if (pct === '' || isNaN(n)) return; // 入力途中（空・不完全）は無視
+  track.gain = Math.round(Math.min(400, Math.max(0, n)) / 100 * 1000) / 1000;
   if (S.audio.current?.phaseIdx === phaseIdx && S.audio.current?.trackIdx === trackIdx) {
     if (S.audio.current.gain) S.audio.current.gain.gain.value = S.bgmVol * track.gain;
   }
@@ -8216,8 +8218,8 @@ function renderBGMPanel() {
           <option value="crossfade"${trans==='crossfade'?' selected':''}>⇌ クロス</option>
         </select>
         <div class="track-gain-area" onclick="event.stopPropagation()">
-          <input type="number" class="track-gain-input" min="10" max="400" value="${gainPct}"
-                 onchange="setTrackGain(${S.curPhase},${i},this.value)" title="トラック音量 (%)">
+          <input type="number" class="track-gain-input" value="${gainPct}"
+                 oninput="setTrackGain(${S.curPhase},${i},this.value)" title="トラック音量 (%)">
           <span class="track-gain-pct">%</span>
           <button class="track-norm-btn" onclick="autoNormalizeTrack(${S.curPhase},${i},this)" title="ピーク自動正規化">A</button>
         </div>
