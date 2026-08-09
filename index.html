@@ -1164,8 +1164,8 @@
   <div id="clock-sw-area">
     <div id="wall-clock">--:--</div>
     <span id="sw-sep">|</span>
-    <div id="stopwatch" onclick="swTap(event)" ondblclick="swDoubleTap(event)"
-         title="本番モード: タップで開始/停止  マスタリングモード: ダブルクリックでリセット">00:00:00</div>
+    <div id="stopwatch" ondblclick="swDoubleTap(event)"
+         title="本番モード: ダブルタップで開始/停止  マスタリングモード: ダブルクリックでリセット">00:00:00</div>
   </div>
   <div class="hdr-btn">
     <button id="btn-portrait-toggle" onclick="togglePortraitDebug()" title="縦画面テスト（デバッグ用）" style="font-size:11px;padding:4px 9px;border:1px dashed var(--border-h);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">🔄 縦</button>
@@ -7001,11 +7001,27 @@ function swTap(e) {
   swUpdateDisplay();
 }
 function swDoubleTap(e) {
-  if (S.mode !== 'mastering') return;
-  clearInterval(SW.tickId); SW.tickId = null;
-  SW.running = false; SW.elapsed = 0;
-  qs('#stopwatch').textContent = '00:00:00';
-  qs('#stopwatch').classList.remove('sw-running');
+  if (S.mode === 'live') {
+    // 本番モード: ダブルタップで開始/停止
+    if (SW.running) {
+      SW.elapsed += Date.now() - SW.startTime;
+      clearInterval(SW.tickId); SW.tickId = null;
+      SW.running = false;
+      qs('#stopwatch').classList.remove('sw-running');
+    } else {
+      SW.startTime = Date.now();
+      SW.tickId = setInterval(swUpdateDisplay, 500);
+      SW.running = true;
+      qs('#stopwatch').classList.add('sw-running');
+    }
+    swUpdateDisplay();
+  } else {
+    // マスタリングモード: ダブルクリックでリセット
+    clearInterval(SW.tickId); SW.tickId = null;
+    SW.running = false; SW.elapsed = 0;
+    qs('#stopwatch').textContent = '00:00:00';
+    qs('#stopwatch').classList.remove('sw-running');
+  }
 }
 function swStopFromLive() {
   if (!SW.running) return;
