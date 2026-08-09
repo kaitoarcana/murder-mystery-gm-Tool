@@ -664,9 +664,10 @@
     /* ── Modal ── */
     .overlay {
       position: fixed; inset: 0;
+      width: 100%; height: 100%;
       background: var(--overlay-bg);
       backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center; z-index: 100;
+      display: flex; align-items: center; justify-content: center; z-index: 1050;
     }
     .overlay.hidden { display: none; }
     .modal {
@@ -4080,6 +4081,7 @@ function openJudgmentSetup() {
 }
 
 function openJudgmentResult() {
+  closeHamburger();
   refreshJudgmentResult();
   openModal('ov-judgment-result');
 }
@@ -7272,7 +7274,9 @@ function bindAll() {
 // Modal helpers
 // ═══════════════════════════════════════════════════════
 function openModal(id) {
+  closeHamburger();
   qs('#' + id).classList.remove('hidden');
+  void document.body.offsetHeight;
   if (id === 'ov-settings') {
     renderScenarioDisplay(); renderAlarmGlobal();
     enumAudioDevices();
@@ -7884,6 +7888,7 @@ function requestPhaseFullscreen() {
 }
 
 function toggleTimerWin() {
+  closeHamburger();
   if (S.subWin && !S.subWin.closed) {
     S.subWin.close();
     S.subWin = null;
