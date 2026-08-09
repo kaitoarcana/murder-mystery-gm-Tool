@@ -1116,6 +1116,43 @@
 
     /* BGMパネルが右列に来るため portrait-np-area は不要 */
     #portrait-np-area { display: none !important; }
+
+    /* ── 時計 & ストップウォッチ ── */
+    #clock-sw-area {
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    #wall-clock {
+      font-size: 28px; font-weight: 700;
+      font-family: var(--font-mono); letter-spacing: 2px;
+      color: var(--text); line-height: 1;
+    }
+    #sw-sep { color: var(--border-h); font-size: 20px; line-height: 1; }
+    #stopwatch {
+      font-size: 22px; font-weight: 600;
+      font-family: var(--font-mono); letter-spacing: 1px;
+      color: var(--text-mid); line-height: 1;
+      padding: 4px 8px; border-radius: 6px;
+      transition: background .15s, color .15s;
+      user-select: none; -webkit-user-select: none;
+    }
+    body.mode-live #stopwatch { cursor: pointer; }
+    body.mode-live #stopwatch:hover { background: var(--bg-2); color: var(--text); }
+    #stopwatch.sw-running { color: var(--green); }
+    body.mode-mastering #stopwatch { cursor: default; }
+    body.mode-mastering #stopwatch:hover { background: transparent; }
+
+    /* 縦画面: 時計+SWを全幅の最上行に配置 */
+    body.portrait-mode #header { flex-wrap: wrap; padding-bottom: 8px; }
+    body.portrait-mode #clock-sw-area {
+      order: -1; width: 100%;
+      flex-direction: column; align-items: center; gap: 2px;
+      padding: 6px 0 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+    body.portrait-mode #wall-clock { font-size: 52px; letter-spacing: 4px; }
+    body.portrait-mode #stopwatch  { font-size: 36px; letter-spacing: 2px; }
+    body.portrait-mode #sw-sep { display: none; }
   </style>
 </head>
 <body>
@@ -1124,6 +1161,12 @@
   <div id="header-logo">🎭</div>
   <div id="scenario-display">シナリオ未設定</div>
   <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
+  <div id="clock-sw-area">
+    <div id="wall-clock">--:--</div>
+    <span id="sw-sep">|</span>
+    <div id="stopwatch" onclick="swTap(event)" ondblclick="swDoubleTap(event)"
+         title="本番モード: タップで開始/停止  マスタリングモード: ダブルクリックでリセット">00:00:00</div>
+  </div>
   <div class="hdr-btn">
     <button id="btn-portrait-toggle" onclick="togglePortraitDebug()" title="縦画面テスト（デバッグ用）" style="font-size:11px;padding:4px 9px;border:1px dashed var(--border-h);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">🔄 縦</button>
     <button id="btn-theme" title="ライト/ダーク切り替え">☀</button>
@@ -6930,6 +6973,58 @@ function addDrumInteractions(scrollEl) {
   }
 }
 
+// ── 時計 & ストップウォッチ ──
+const SW = { running: false, startTime: 0, elapsed: 0, tickId: null };
+
+function swFormat(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+function swUpdateDisplay() {
+  qs('#stopwatch').textContent = swFormat(SW.elapsed + (SW.running ? Date.now() - SW.startTime : 0));
+}
+function swTap(e) {
+  if (S.mode !== 'live') return;
+  if (SW.running) {
+    SW.elapsed += Date.now() - SW.startTime;
+    clearInterval(SW.tickId); SW.tickId = null;
+    SW.running = false;
+    qs('#stopwatch').classList.remove('sw-running');
+  } else {
+    SW.startTime = Date.now();
+    SW.tickId = setInterval(swUpdateDisplay, 500);
+    SW.running = true;
+    qs('#stopwatch').classList.add('sw-running');
+  }
+  swUpdateDisplay();
+}
+function swDoubleTap(e) {
+  if (S.mode !== 'mastering') return;
+  clearInterval(SW.tickId); SW.tickId = null;
+  SW.running = false; SW.elapsed = 0;
+  qs('#stopwatch').textContent = '00:00:00';
+  qs('#stopwatch').classList.remove('sw-running');
+}
+function swStopFromLive() {
+  if (!SW.running) return;
+  SW.elapsed += Date.now() - SW.startTime;
+  clearInterval(SW.tickId); SW.tickId = null;
+  SW.running = false;
+  qs('#stopwatch').classList.remove('sw-running');
+  swUpdateDisplay();
+}
+(function initClock() {
+  function tick() {
+    const now = new Date();
+    qs('#wall-clock').textContent =
+      String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
 function initDrums() {
   // Main panel
   const minEl = qs('#drum-min-scroll');
@@ -7498,6 +7593,7 @@ function toggleMode() {
   } else {
     S.mode = 'mastering';
     window.removeEventListener('beforeunload', _liveGuard);
+    swStopFromLive();
     if (S.audio.current) fadeAndStopCurrent(null);
     timerClear();
     if (S.timer.state === 'running') { S.timer.state = 'stopped'; updateTimerUI(); }
