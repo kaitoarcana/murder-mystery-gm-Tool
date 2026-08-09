@@ -1380,6 +1380,7 @@
       <button class="mtab" data-tab="t-display">表示</button>
       <button class="mtab" data-tab="t-drive">Google Drive</button>
       <button class="mtab" data-tab="t-audio">音声デバイス</button>
+      <button class="mtab" data-tab="t-timemgr">時間管理</button>
     </div>
     <div class="modal-body">
     <div class="mtab-content active" id="t-scenario">
@@ -1627,6 +1628,16 @@
         <select class="form-control" id="sel-video-device">
           <option value="">システムデフォルト</option>
         </select>
+      </div>
+    <div class="mtab-content" id="t-timemgr">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:12px;color:var(--text-dim)">
+          フェイズ切替・SW停止・モード切替のタイミングを記録します。ゲーム初期化でクリアされます。
+        </div>
+        <button class="btn-ghost" onclick="exportLapTimes()" style="font-size:12px;white-space:nowrap;margin-left:12px">📥 エクスポート</button>
+      </div>
+      <div id="lap-table-wrap" style="overflow-x:auto;max-height:360px;overflow-y:auto">
+        <div class="empty" style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">記録なし</div>
       </div>
     </div>
     </div><!-- /modal-body -->
@@ -6974,7 +6985,7 @@ function addDrumInteractions(scrollEl) {
 }
 
 // ── 時計 & ストップウォッチ ──
-const SW = { running: false, startTime: 0, elapsed: 0, tickId: null };
+const SW = { running: false, startTime: 0, elapsed: 0, tickId: null, laps: [] };
 
 function swFormat(ms) {
   const s = Math.floor(ms / 1000);
@@ -7004,6 +7015,7 @@ function swDoubleTap(e) {
   if (S.mode === 'live') {
     // 本番モード: ダブルタップで開始/停止
     if (SW.running) {
+      recordLap('SW一時停止');
       SW.elapsed += Date.now() - SW.startTime;
       clearInterval(SW.tickId); SW.tickId = null;
       SW.running = false;
@@ -7025,11 +7037,61 @@ function swDoubleTap(e) {
 }
 function swStopFromLive() {
   if (!SW.running) return;
+  recordLap('マスタリングモード切替');
   SW.elapsed += Date.now() - SW.startTime;
   clearInterval(SW.tickId); SW.tickId = null;
   SW.running = false;
   qs('#stopwatch').classList.remove('sw-running');
   swUpdateDisplay();
+}
+function recordLap(eventName) {
+  const totalMs = SW.elapsed + (SW.running ? Date.now() - SW.startTime : 0);
+  if (totalMs === 0 && SW.laps.length === 0) return;
+  const prevMs = SW.laps.length > 0 ? SW.laps[SW.laps.length - 1].totalMs : 0;
+  SW.laps.push({ event: eventName, totalMs, lapMs: totalMs - prevMs });
+  renderLapTable();
+}
+function renderLapTable() {
+  const wrap = qs('#lap-table-wrap');
+  if (!wrap) return;
+  if (!SW.laps.length) {
+    wrap.innerHTML = '<div class="empty" style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">記録なし</div>';
+    return;
+  }
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:13px">';
+  h += '<thead><tr style="border-bottom:2px solid var(--border)">';
+  h += '<th style="text-align:right;padding:5px 8px;color:var(--text-dim);font-weight:600;width:32px">#</th>';
+  h += '<th style="text-align:left;padding:5px 8px;color:var(--text-dim);font-weight:600">イベント</th>';
+  h += '<th style="text-align:right;padding:5px 8px;color:var(--text-dim);font-weight:600;white-space:nowrap">ラップ</th>';
+  h += '<th style="text-align:right;padding:5px 8px;color:var(--text-dim);font-weight:600;white-space:nowrap">合計</th>';
+  h += '</tr></thead><tbody>';
+  SW.laps.forEach((lap, i) => {
+    h += `<tr style="border-bottom:1px solid var(--border)">`;
+    h += `<td style="padding:5px 8px;color:var(--text-dim);text-align:right">${i+1}</td>`;
+    h += `<td style="padding:5px 8px">${lap.event}</td>`;
+    h += `<td style="padding:5px 8px;text-align:right;font-family:var(--font-mono)">${swFormat(lap.lapMs)}</td>`;
+    h += `<td style="padding:5px 8px;text-align:right;font-family:var(--font-mono)">${swFormat(lap.totalMs)}</td>`;
+    h += '</tr>';
+  });
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
+}
+function exportLapTimes() {
+  if (!SW.laps.length) { notify('記録がありません', 'err'); return; }
+  let tsv = '#\tイベント\tラップ\t合計\n';
+  SW.laps.forEach((lap, i) => {
+    tsv += `${i+1}\t${lap.event}\t${swFormat(lap.lapMs)}\t${swFormat(lap.totalMs)}\n`;
+  });
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const stamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}`;
+  const name = (S.scenario.name || 'シナリオ').replace(/[\\/:*?"<>|]/g, '_');
+  const fname = `${name}_時間管理_${stamp}.txt`;
+  const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
 }
 (function initClock() {
   function tick() {
@@ -7198,6 +7260,7 @@ function bindAll() {
       qsa('.mtab-content').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
       qs('#' + id).classList.add('active');
+      if (id === 't-timemgr') renderLapTable();
     };
   });
 
@@ -7374,6 +7437,13 @@ function selectPhase(i) {
 
   const srcPh  = (prevIdx >= 0 && prevIdx < S.scenario.phases.length) ? S.scenario.phases[prevIdx] : null;
   const destPh = S.scenario.phases[i];
+
+  // ラップ記録（本番モード＋SW起動済みの場合）
+  if (S.mode === 'live' && (SW.running || SW.elapsed > 0) && srcPh) {
+    const fromName = srcPh.name  || `フェイズ ${prevIdx + 1}`;
+    const toName   = destPh.name || `フェイズ ${i + 1}`;
+    recordLap(`${fromName} → ${toName}`);
+  }
 
   const outgoing   = srcPh ? (srcPh.outgoingAction || 'fadeout') : null;
   const incoming   = destPh.incomingAction || 'nothing';
@@ -9204,10 +9274,16 @@ function exportJSON() {
   a.click(); URL.revokeObjectURL(a.href);
 }
 function resetGame() {
-  if (!confirm('ゲーム中の記録（入力データ・フェイズ位置・チェックリスト）をすべてリセットします。\nシナリオ設定はそのまま残ります。よろしいですか？')) return;
+  if (!confirm('ゲーム中の記録（入力データ・フェイズ位置・チェックリスト・ラップタイム）をすべてリセットします。\nシナリオ設定はそのまま残ります。よろしいですか？')) return;
   timerClear();
   S.timer.rem = 0; S.timer.total = 0; S.timer.state = 'stopped';
   if (S.audio.current) stopCurrent();
+  // ストップウォッチ＆ラップをリセット
+  clearInterval(SW.tickId); SW.tickId = null;
+  SW.running = false; SW.elapsed = 0; SW.startTime = 0; SW.laps = [];
+  qs('#stopwatch').textContent = '00:00:00';
+  qs('#stopwatch').classList.remove('sw-running');
+  renderLapTable();
   delete S.scenario.gameRecord;
   S.checkState = {};
   S.curPhase = -1;
