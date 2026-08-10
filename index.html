@@ -7,8 +7,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/dseg@0.46.0/css/dseg.min.css" rel="stylesheet">
   <style>
+    /* 7セグメントフォント: @font-face で直接ロード（CDN CSS経由は相対パス解決が不安定なため） */
+    @font-face {
+      font-family: 'DSEG7 Classic';
+      src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-BoldItalic.woff2') format('woff2');
+      font-style: italic; font-weight: 700;
+    }
+    @font-face {
+      font-family: 'DSEG7 Classic';
+      src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Italic.woff2') format('woff2');
+      font-style: italic; font-weight: 400;
+    }
     /* Hallmark · app-scope redesign · genre: atmospheric · tone: paper-and-ink · 2026-07-26
      * palette: warm cream paper + cinnabar seal-red (OKLCH) · typography: Yu Mincho + Hiragino Sans
      * default: light (生成り紙面) · dark toggle: [data-theme="dark"]
