@@ -9436,13 +9436,15 @@ tr.total td{font-weight:700;background:#f8f3ec}
   }
 
   /* ── ラップタイム ── */
+  h += '<h2>⏱ ラップタイム</h2>';
   if (SW.laps.length) {
-    h += '<h2>⏱ ラップタイム</h2>';
     h += '<table><thead><tr><th>#</th><th>イベント</th><th>ラップ</th><th>合計</th></tr></thead><tbody>';
     SW.laps.forEach((lap, i) => {
       h += `<tr><td>${i+1}</td><td>${esc(lap.event)}</td><td>${swFormat(lap.lapMs)}</td><td>${swFormat(lap.totalMs)}</td></tr>`;
     });
     h += '</tbody></table>';
+  } else {
+    h += '<p style="color:#888;font-size:13px">（記録なし）</p>';
   }
 
   h += '</body></html>';
