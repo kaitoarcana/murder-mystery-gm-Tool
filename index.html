@@ -169,8 +169,8 @@
     #header {
       background: var(--bg-1);
       border-bottom: 1px solid var(--border);
-      padding: 14px 18px;
-      display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+      padding: 10px 18px;
+      display: flex; align-items: stretch; gap: 14px; flex-shrink: 0;
     }
     /* ヘッダー内ボタンはタブレット操作を考慮して大きめに */
     #header button { font-size: 14px; padding: 10px 16px; }
@@ -179,7 +179,14 @@
       width: 48px; height: 48px;
       display: flex; align-items: center; justify-content: center;
       background: var(--accent-dim); border: 1.5px solid var(--accent);
-      border-radius: 12px;
+      border-radius: 12px; align-self: center;
+    }
+    #header-info {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; gap: 4px; min-width: 0;
+    }
+    #header-info-top {
+      display: flex; align-items: center; gap: 10px;
     }
     #scenario-display {
       color: var(--text); flex: 1; font-size: 20px;
@@ -187,7 +194,7 @@
       letter-spacing: 0.06em; white-space: nowrap;
       overflow: hidden; text-overflow: ellipsis;
     }
-    .hdr-btn { display: flex; gap: 6px; }
+    .hdr-btn { display: flex; gap: 6px; align-items: stretch; }
 
     /* ── Theme toggle ── */
     #btn-theme {
@@ -1120,19 +1127,19 @@
 
     /* ── 時計 & ストップウォッチ ── */
     #clock-sw-area {
-      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 10px;
     }
     #wall-clock {
-      font-size: 28px; font-weight: 700;
+      font-size: 20px; font-weight: 700;
       font-family: var(--font-mono); letter-spacing: 2px;
       color: var(--text); line-height: 1;
     }
-    #sw-sep { color: var(--border-h); font-size: 20px; line-height: 1; }
+    #sw-sep { color: var(--border-h); font-size: 14px; line-height: 1; }
     #stopwatch {
-      font-size: 22px; font-weight: 600;
+      font-size: 20px; font-weight: 600;
       font-family: var(--font-mono); letter-spacing: 1px;
       color: var(--text-mid); line-height: 1;
-      padding: 4px 8px; border-radius: 6px;
+      padding: 2px 6px; border-radius: 6px;
       transition: background .15s, color .15s;
       user-select: none; -webkit-user-select: none;
     }
@@ -1141,33 +1148,23 @@
     #stopwatch.sw-running { color: var(--green); }
     body.mode-mastering #stopwatch { cursor: default; }
     body.mode-mastering #stopwatch:hover { background: transparent; }
-
-    /* 縦画面: 時計+SWを全幅の最上行に配置 */
-    body.portrait-mode #header { flex-wrap: wrap; padding-bottom: 8px; }
-    body.portrait-mode #clock-sw-area {
-      order: -1; width: 100%;
-      flex-direction: column; align-items: center; gap: 2px;
-      padding: 6px 0 10px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 2px;
-    }
-    body.portrait-mode #wall-clock { font-size: 52px; letter-spacing: 4px; }
-    body.portrait-mode #stopwatch  { font-size: 36px; letter-spacing: 2px; }
-    body.portrait-mode #sw-sep { display: none; }
   </style>
 </head>
 <body>
 
 <header id="header">
   <div id="header-logo">🎭</div>
-  <span id="app-version" style="font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:1px 6px;flex-shrink:0;letter-spacing:0.04em">v0810-4</span>
-  <div id="scenario-display">シナリオ未設定</div>
-  <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
-  <div id="clock-sw-area">
-    <div id="wall-clock">--:--</div>
-    <span id="sw-sep">|</span>
-    <div id="stopwatch" ondblclick="swDoubleTap(event)"
-         title="本番モード: ダブルタップで開始/停止  マスタリングモード: ダブルクリックでリセット">00:00:00</div>
+  <div id="header-info">
+    <div id="header-info-top">
+      <div id="scenario-display">シナリオ未設定</div>
+      <div id="live-indicator"><span class="live-dot"></span>LIVE</div>
+    </div>
+    <div id="clock-sw-area">
+      <div id="wall-clock">--:--</div>
+      <span id="sw-sep">|</span>
+      <div id="stopwatch" ondblclick="swDoubleTap(event)"
+           title="本番モード: ダブルタップで開始/停止  マスタリングモード: ダブルクリックでリセット">00:00:00</div>
+    </div>
   </div>
   <div class="hdr-btn">
     <button id="btn-portrait-toggle" onclick="togglePortraitDebug()" title="縦画面テスト（デバッグ用）" style="font-size:11px;padding:4px 9px;border:1px dashed var(--border-h);background:transparent;color:var(--text-dim);border-radius:5px;cursor:pointer;transition:all .2s">🔄 縦</button>
@@ -1194,6 +1191,7 @@
   <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-settings')">⚙ 設定</button>
   <button class="hm-btn" id="btn-fullscreen" onclick="closeHamburger();toggleMainFullscreen()">⛶ 全画面にする</button>
   <a class="hm-btn" href="help-bgm.html" target="_blank" onclick="closeHamburger()">? ヘルプ</a>
+  <span id="app-version" style="font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:2px 8px;display:block;text-align:center;margin:6px 8px 2px;letter-spacing:0.04em">v0810-5</span>
 </div>
 
 <nav id="phase-nav">
