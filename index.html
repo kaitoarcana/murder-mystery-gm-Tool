@@ -1209,6 +1209,7 @@
   <button class="hm-btn hm-mastering-only" onclick="closeHamburger();openModal('ov-record')">📋 記録</button>
   <button class="hm-btn hm-mastering-only" onclick="closeHamburger();openJudgmentResult()">⚖ 判定</button>
   <button class="hm-btn" onclick="closeHamburger();broadcastScoreTable()">📊 得点表示</button>
+  <button class="hm-btn" onclick="closeHamburger();exportGameSummary()">📄 ゲーム記録エクスポート</button>
   <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-content')">📝 条件判定設定</button>
   <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-settings')">⚙ 設定</button>
   <button class="hm-btn" id="btn-fullscreen" onclick="closeHamburger();toggleMainFullscreen()">⛶ 全画面にする</button>
@@ -9301,6 +9302,160 @@ function exportJSON() {
   a.download = `${_name}_${_ts}.json`;
   a.click(); URL.revokeObjectURL(a.href);
 }
+function exportGameSummary() {
+  const sc  = S.scenario;
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp   = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}`;
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  const jResults = evaluateJudgmentSections();
+  const scores   = calcScores();
+  const gr       = sc.gameRecord || {};
+
+  const esc = s => escHtml(s == null ? '' : String(s));
+  const fmtFormVal = (v, row) => {
+    if (v === undefined || v === null || v === '') return '—';
+    if (row.valueType === 'toggle') return v ? (row.trueLabel || '✓') : (row.falseLabel || '×');
+    return esc(v);
+  };
+  const fmtCellVal = (v, col) => {
+    if (v === undefined || v === null || v === '') return '—';
+    if (col.type === 'toggle') return v ? (col.trueLabel || '✓') : (col.falseLabel || '×');
+    return esc(v);
+  };
+
+  const css = `
+body{font-family:'Yu Mincho','YuMincho','Hiragino Mincho ProN',Georgia,serif;
+     max-width:960px;margin:0 auto;padding:24px 32px;color:#222;font-size:14px;line-height:1.7}
+h1{font-size:22px;border-bottom:2px solid #8b3a2a;padding-bottom:8px;margin-bottom:4px}
+.meta{color:#888;font-size:12px;margin-bottom:28px}
+h2{font-size:15px;background:#f5f0e8;border-left:4px solid #8b3a2a;padding:5px 12px;margin:32px 0 10px}
+h3{font-size:14px;font-weight:700;color:#444;margin:16px 0 4px}
+table{border-collapse:collapse;width:100%;margin-bottom:12px}
+th{background:#ede8df;border:1px solid #c8bfb4;padding:5px 10px;text-align:left;font-size:12px;white-space:nowrap}
+td{border:1px solid #c8bfb4;padding:5px 10px;font-size:13px;vertical-align:top}
+tr.total td{font-weight:700;background:#f8f3ec}
+.ok{color:#2a7a3a}.ng{color:#aaa}
+@media print{h2{page-break-before:auto}}`;
+
+  let h = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>${esc(sc.name)} ゲーム記録</title><style>${css}</style></head><body>
+<h1>${esc(sc.name)} ゲーム記録</h1>
+<p class="meta">エクスポート: ${dateStr}</p>`;
+
+  /* ── 記録 ── */
+  const recSecs = sc.recordSections || [];
+  if (recSecs.length) {
+    h += '<h2>📋 記録</h2>';
+    for (const sec of recSecs) {
+      const secGr = gr[sec.id] || {};
+      h += `<h3>${esc(sec.name)}</h3>`;
+      if (sec.style === 'form') {
+        h += '<table><tbody>';
+        for (const row of sec.rows || []) {
+          if (row.isHeader) {
+            h += `<tr><th colspan="2">${esc(row.headerLabel || '')}</th></tr>`;
+          } else {
+            h += `<tr><td>${esc(row.label)}</td><td>${fmtFormVal(secGr[row.id], row)}</td></tr>`;
+          }
+        }
+        h += '</tbody></table>';
+      } else if (sec.style === 'table') {
+        const cols = sec.columns || [];
+        if (!cols.length) continue;
+        h += '<table><thead><tr>';
+        for (const col of cols) h += `<th>${esc(col.name)}</th>`;
+        h += '</tr></thead><tbody>';
+        for (const row of sec.rows || []) {
+          if (row.isHeader) {
+            h += `<tr><th colspan="${cols.length}">${esc(row.headerLabel || '')}</th></tr>`;
+          } else {
+            const rowGr = secGr[row.id] || {};
+            h += '<tr>';
+            for (const col of cols) {
+              const cv = (row.cells && row.cells[col.id] != null) ? row.cells[col.id] : rowGr[col.id];
+              h += `<td>${fmtCellVal(cv, col)}</td>`;
+            }
+            h += '</tr>';
+          }
+        }
+        h += '</tbody></table>';
+      }
+    }
+  }
+
+  /* ── 判定結果 ── */
+  const jSecs = sc.judgmentSections || [];
+  if (jSecs.length) {
+    h += '<h2>⚖ 判定結果</h2>';
+    h += '<table><thead><tr><th>判定</th><th>結果</th></tr></thead><tbody>';
+    for (const jsec of jSecs) {
+      const r = jResults[jsec.id];
+      const txt = (r ? r.result : null) || jsec.defaultResult || '—';
+      h += `<tr><td>${esc(jsec.name)}</td><td>${esc(txt)}</td></tr>`;
+    }
+    h += '</tbody></table>';
+  }
+
+  /* ── 得点 ── */
+  if (scores.length) {
+    h += '<h2>📊 得点</h2>';
+    for (const cs of scores) {
+      h += `<h3>${esc(cs.charName)}</h3>`;
+      h += '<table><thead><tr><th>ミッション</th><th>達成</th><th>獲得点数</th></tr></thead><tbody>';
+      for (const it of cs.items) {
+        const achCell = it.scoreType === 'boolean'
+          ? (it.achieved ? '<span class="ok">✓</span>' : '<span class="ng">—</span>')
+          : `${it.count}回`;
+        h += `<tr><td>${esc(it.name)}</td><td>${achCell}</td><td>${it.acquired}</td></tr>`;
+      }
+      h += `<tr class="total"><td colspan="2">合計</td><td>${cs.total}</td></tr>`;
+      h += '</tbody></table>';
+    }
+  }
+
+  /* ── 結末 ── */
+  const endingPhases = (sc.phases || []).filter(ph => ph.isEndingPhase);
+  if (endingPhases.length) {
+    h += '<h2>🎭 結末</h2>';
+    for (const ph of endingPhases) {
+      h += `<h3>${esc(ph.name)}</h3>`;
+      const varId   = evaluateEndingVariant(ph);
+      const variant = (ph.variants || []).find(v => v.id === varId);
+      if (variant) {
+        h += `<p><strong>選択された結末: ${esc(variant.name)}</strong></p>`;
+        if (variant.notes) h += `<p>${esc(variant.notes).replace(/\n/g, '<br>')}</p>`;
+      } else {
+        h += '<p>（該当する結末なし）</p>';
+      }
+      if ((ph.variants || []).length > 1) {
+        h += `<p style="font-size:11px;color:#888">候補: ${ph.variants.map(v => esc(v.name)).join(' / ')}</p>`;
+      }
+    }
+  }
+
+  /* ── ラップタイム ── */
+  if (SW.laps.length) {
+    h += '<h2>⏱ ラップタイム</h2>';
+    h += '<table><thead><tr><th>#</th><th>イベント</th><th>ラップ</th><th>合計</th></tr></thead><tbody>';
+    SW.laps.forEach((lap, i) => {
+      h += `<tr><td>${i+1}</td><td>${esc(lap.event)}</td><td>${swFormat(lap.lapMs)}</td><td>${swFormat(lap.totalMs)}</td></tr>`;
+    });
+    h += '</tbody></table>';
+  }
+
+  h += '</body></html>';
+
+  const fname = `${(sc.name || 'ゲーム記録').replace(/[\\/:*?"<>|]/g, '_')}_記録_${stamp}.html`;
+  const blob  = new Blob([h], { type: 'text/html;charset=utf-8' });
+  const url   = URL.createObjectURL(blob);
+  const a     = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+  notify('ゲーム記録をエクスポートしました', 'ok');
+}
+
 function resetGame() {
   if (!confirm('ゲーム中の記録（入力データ・フェイズ位置・チェックリスト・ラップタイム）をすべてリセットします。\nシナリオ設定はそのまま残ります。よろしいですか？')) return;
   timerClear();
