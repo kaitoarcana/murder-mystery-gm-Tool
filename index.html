@@ -29,10 +29,10 @@
       color-scheme: light;
 
       /* Backgrounds — 生成り紙（warm cream paper） */
-      --bg-0: oklch(96% 0.014 84);
-      --bg-1: oklch(94% 0.015 82);
-      --bg-2: oklch(91% 0.017 80);
-      --bg-3: oklch(87% 0.019 78);
+      --bg-0: oklch(96% 0.032 82);
+      --bg-1: oklch(93% 0.036 80);
+      --bg-2: oklch(89% 0.040 78);
+      --bg-3: oklch(84% 0.045 76);
 
       /* Accent — cinnabar/seal red (朱肉): darker for light bg */
       --accent:      oklch(48% 0.180 22);
@@ -47,13 +47,13 @@
       --red:       oklch(48% 0.165 22);
 
       /* Text — 墨インク（dark ink on paper） */
-      --text:     oklch(13% 0.030 48);
-      --text-mid: oklch(36% 0.026 52);
-      --text-dim: oklch(54% 0.020 56);
+      --text:     oklch(10% 0.048 52);
+      --text-mid: oklch(28% 0.042 56);
+      --text-dim: oklch(48% 0.030 62);
 
-      /* Borders — 罫線（warm, ruled-paper） */
-      --border:   oklch(78% 0.022 74);
-      --border-h: oklch(65% 0.028 70);
+      /* Borders — 罫線（warm, ruled-paper · visible warm line） */
+      --border:   oklch(72% 0.055 78);
+      --border-h: oklch(56% 0.068 74);
 
       --radius:    8px;
       --radius-sm: 5px;
@@ -120,23 +120,23 @@
     /* ── Dark theme override — 琥珀羊皮紙 (aged amber parchment) ── */
     [data-theme="dark"] {
       color-scheme: dark;
-      --bg-0: oklch(14% 0.030 68);
-      --bg-1: oklch(18% 0.032 68);
-      --bg-2: oklch(23% 0.034 66);
-      --bg-3: oklch(29% 0.036 64);
-      --accent:      oklch(60% 0.155 22);
-      --accent-h:    oklch(52% 0.155 22);
-      --accent-dim:  oklch(60% 0.155 22 / 0.14);
-      --accent-glow: oklch(60% 0.155 22 / 0.24);
+      --bg-0: oklch(13% 0.022 70);
+      --bg-1: oklch(20% 0.062 68);
+      --bg-2: oklch(27% 0.078 66);
+      --bg-3: oklch(35% 0.092 64);
+      --accent:      oklch(62% 0.155 22);
+      --accent-h:    oklch(54% 0.155 22);
+      --accent-dim:  oklch(62% 0.155 22 / 0.15);
+      --accent-glow: oklch(62% 0.155 22 / 0.26);
       --green:     oklch(64% 0.095 155);
       --green-dim: oklch(64% 0.095 155 / 0.08);
       --yellow:    oklch(73% 0.100 75);
       --red:       oklch(61% 0.155 22);
-      --text:     oklch(93% 0.012 84);
-      --text-mid: oklch(75% 0.018 76);
-      --text-dim: oklch(60% 0.016 72);
-      --border:   oklch(30% 0.042 66);
-      --border-h: oklch(40% 0.050 64);
+      --text:     oklch(95% 0.018 86);
+      --text-mid: oklch(78% 0.025 80);
+      --text-dim: oklch(62% 0.020 75);
+      --border:   oklch(30% 0.065 68);
+      --border-h: oklch(42% 0.080 65);
       --accent-ink:    oklch(97% 0.005 80);
       --accent-press:  oklch(40% 0.155 22);
       --accent-tab:    oklch(60% 0.155 22 / 0.07);
@@ -1227,7 +1227,7 @@
   <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-settings')">⚙ 設定</button>
   <button class="hm-btn" id="btn-fullscreen" onclick="closeHamburger();toggleMainFullscreen()">⛶ 全画面にする</button>
   <a class="hm-btn" href="help-bgm.html" target="_blank" onclick="closeHamburger()">? ヘルプ</a>
-  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0813-1</span>
+  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0813-2</span>
 </div>
 
 <nav id="phase-nav">
