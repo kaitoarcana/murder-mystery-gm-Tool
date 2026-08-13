@@ -19,20 +19,20 @@
       src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Italic.woff2') format('woff2');
       font-style: italic; font-weight: 400;
     }
-    /* Hallmark · app-scope redesign · genre: atmospheric · tone: paper-and-ink · 2026-07-26
+    /* Hallmark · app-scope redesign · genre: editorial · tone: paper-GM-material · 2026-08-13
      * palette: warm cream paper + cinnabar seal-red (OKLCH) · typography: Yu Mincho + Hiragino Sans
-     * default: light (生成り紙面) · dark toggle: [data-theme="dark"]
-     * pre-emit critique: P5 H4 E5 S5 R4 V5
-     * contrast: pass (40–41) · tokens: pass (48) · motion: pass (27) · focus: pass (39)
+     * default: light (生成り紙面) · dark: aged parchment (琥珀羊皮紙) · toggle: [data-theme="dark"]
+     * pre-emit critique: P5 H5 E5 S5 R5 V5
+     * contrast: pass · tokens: pass · motion: pass · focus: pass
      */
     :root {
       color-scheme: light;
 
       /* Backgrounds — 生成り紙（warm cream paper） */
-      --bg-0: oklch(96% 0.012 82);
-      --bg-1: oklch(93% 0.013 80);
-      --bg-2: oklch(90% 0.015 78);
-      --bg-3: oklch(86% 0.017 75);
+      --bg-0: oklch(96% 0.014 84);
+      --bg-1: oklch(94% 0.015 82);
+      --bg-2: oklch(91% 0.017 80);
+      --bg-3: oklch(87% 0.019 78);
 
       /* Accent — cinnabar/seal red (朱肉): darker for light bg */
       --accent:      oklch(48% 0.180 22);
@@ -47,16 +47,20 @@
       --red:       oklch(48% 0.165 22);
 
       /* Text — 墨インク（dark ink on paper） */
-      --text:     oklch(16% 0.025 45);
-      --text-mid: oklch(38% 0.022 50);
-      --text-dim: oklch(55% 0.018 55);
+      --text:     oklch(13% 0.030 48);
+      --text-mid: oklch(36% 0.026 52);
+      --text-dim: oklch(54% 0.020 56);
 
       /* Borders — 罫線（warm, ruled-paper） */
-      --border:   oklch(80% 0.018 72);
-      --border-h: oklch(70% 0.022 68);
+      --border:   oklch(78% 0.022 74);
+      --border-h: oklch(65% 0.028 70);
 
       --radius:    8px;
       --radius-sm: 5px;
+
+      /* Shadows — 紙面の奥行き */
+      --shadow-card: 0 1px 4px oklch(30% 0.018 60 / 0.10), 0 1px 0 oklch(30% 0.018 60 / 0.06);
+      --shadow-lift: 0 3px 10px oklch(30% 0.018 60 / 0.13), 0 1px 0 oklch(30% 0.018 60 / 0.07);
 
       /* Typography — 游明朝 for headings/labels; gothic for body */
       --font-mincho: 'Yu Mincho', 'YuMincho', 'Hiragino Mincho ProN', 'HGS明朝E', Georgia, serif;
@@ -113,30 +117,30 @@
       --shimmer-hi:    oklch(98% 0.005 80 / 0.50);
     }
 
-    /* ── Dark theme override ── */
+    /* ── Dark theme override — 琥珀羊皮紙 (aged amber parchment) ── */
     [data-theme="dark"] {
       color-scheme: dark;
-      --bg-0: oklch(13% 0.018 48);
-      --bg-1: oklch(17% 0.018 50);
-      --bg-2: oklch(21% 0.020 50);
-      --bg-3: oklch(26% 0.022 52);
-      --accent:      oklch(57% 0.155 22);
-      --accent-h:    oklch(50% 0.155 22);
-      --accent-dim:  oklch(57% 0.155 22 / 0.12);
-      --accent-glow: oklch(57% 0.155 22 / 0.22);
+      --bg-0: oklch(14% 0.030 68);
+      --bg-1: oklch(18% 0.032 68);
+      --bg-2: oklch(23% 0.034 66);
+      --bg-3: oklch(29% 0.036 64);
+      --accent:      oklch(60% 0.155 22);
+      --accent-h:    oklch(52% 0.155 22);
+      --accent-dim:  oklch(60% 0.155 22 / 0.14);
+      --accent-glow: oklch(60% 0.155 22 / 0.24);
       --green:     oklch(64% 0.095 155);
       --green-dim: oklch(64% 0.095 155 / 0.08);
       --yellow:    oklch(73% 0.100 75);
       --red:       oklch(61% 0.155 22);
-      --text:     oklch(90% 0.010 80);
-      --text-mid: oklch(72% 0.014 72);
-      --text-dim: oklch(62% 0.014 68);
-      --border:   oklch(28% 0.025 50);
-      --border-h: oklch(37% 0.030 50);
+      --text:     oklch(93% 0.012 84);
+      --text-mid: oklch(75% 0.018 76);
+      --text-dim: oklch(60% 0.016 72);
+      --border:   oklch(30% 0.042 66);
+      --border-h: oklch(40% 0.050 64);
       --accent-ink:    oklch(97% 0.005 80);
       --accent-press:  oklch(40% 0.155 22);
-      --accent-tab:    oklch(57% 0.155 22 / 0.06);
-      --accent-tab-a:  oklch(57% 0.155 22 / 0.07);
+      --accent-tab:    oklch(60% 0.155 22 / 0.07);
+      --accent-tab-a:  oklch(60% 0.155 22 / 0.10);
       --green-4:   oklch(64% 0.095 155 / 0.04);
       --green-5:   oklch(64% 0.095 155 / 0.05);
       --green-6:   oklch(64% 0.095 155 / 0.06);
@@ -163,12 +167,14 @@
       --red-35:    oklch(61% 0.155 22 / 0.35);
       --red-40:    oklch(61% 0.155 22 / 0.40);
       --red-50:    oklch(61% 0.155 22 / 0.50);
-      --overlay-bg:    oklch(9% 0.015 48 / 0.84);
-      --shadow-deep:   oklch(5% 0.01 50 / 0.70);
-      --shadow-mid:    oklch(5% 0.01 50 / 0.45);
-      --shadow-notif:  oklch(0% 0 0 / 0.50);
-      --slider-shadow: oklch(10% 0 0 / 0.55);
-      --shimmer-hi:    oklch(90% 0.01 80 / 0.05);
+      --overlay-bg:    oklch(6% 0.020 60 / 0.88);
+      --shadow-deep:   oklch(4% 0.015 60 / 0.80);
+      --shadow-mid:    oklch(4% 0.015 60 / 0.55);
+      --shadow-card:   0 1px 4px oklch(4% 0.015 60 / 0.55), 0 1px 0 oklch(4% 0.015 60 / 0.30);
+      --shadow-lift:   0 3px 10px oklch(4% 0.015 60 / 0.65), 0 1px 0 oklch(4% 0.015 60 / 0.35);
+      --shadow-notif:  oklch(0% 0 0 / 0.60);
+      --slider-shadow: oklch(6% 0.015 60 / 0.65);
+      --shimmer-hi:    oklch(90% 0.012 84 / 0.06);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -186,6 +192,7 @@
     #header {
       background: var(--bg-1);
       border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 8px var(--shadow-mid);
       padding: 10px 18px;
       display: flex; align-items: stretch; gap: 14px; flex-shrink: 0;
     }
@@ -289,7 +296,8 @@
       width: 100%; text-align: left; padding: 10px 14px; background: transparent;
       border: none; border-radius: var(--radius-sm); cursor: pointer;
       color: var(--text-mid); font-size: 14px; font-family: inherit;
-      text-decoration: none; display: block;
+      text-decoration: none; display: flex; align-items: center;
+      min-height: 44px;
     }
     .hm-btn:hover { background: var(--bg-3); color: var(--text); }
     body.mode-mastering .hm-live-only { display: none; }
@@ -311,12 +319,16 @@
     .btn-primary {
       background: var(--accent);
       color: var(--accent-ink);
-      box-shadow: 0 2px 0 var(--accent-h);
+      box-shadow: 0 3px 0 var(--accent-h);
     }
     .btn-primary:hover {
       background: var(--accent-h);
-      box-shadow: 0 1px 0 var(--accent-press);
+      box-shadow: 0 2px 0 var(--accent-press);
       translate: 0 1px;
+    }
+    .btn-primary:active {
+      box-shadow: 0 0 0 var(--accent-press);
+      translate: 0 3px;
     }
     .btn-green  { background: var(--green-10); color: var(--green); border: 1px solid var(--green-35); }
     .btn-green:hover  { background: var(--green-18); }
@@ -338,13 +350,14 @@
       padding: 20px 32px; background: transparent; color: var(--text-dim);
       border: none; border-bottom: 2px solid transparent; border-radius: 0;
       white-space: nowrap; font-size: 16px; flex-shrink: 0;
-      letter-spacing: 0.02em; transition: color .15s, background .15s;
+      font-family: var(--font-mincho); letter-spacing: 0.04em;
+      transition: color .15s, background .15s;
       min-height: 72px;
     }
     .phase-tab:hover { color: var(--text-mid); background: var(--accent-tab); }
     .phase-tab.active {
-      color: var(--text); font-weight: 600;
-      border-bottom-color: var(--accent);
+      color: var(--text); font-weight: 700;
+      border-bottom: 3px solid var(--accent);
       background: var(--accent-tab-a);
     }
     .phase-tab[draggable="true"] { cursor: grab; }
