@@ -19,26 +19,27 @@
       src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Italic.woff2') format('woff2');
       font-style: italic; font-weight: 400;
     }
-    /* Hallmark · app-scope redesign · genre: editorial · tone: tablet-GM-reference · 2026-08-14
-     * palette: case-file cool white + official-seal deep crimson (OKLCH) · typography: Yu Mincho + Hiragino Sans
-     * default: light (調書紙 — cool copy-paper) · dark: evidence room navy · toggle: [data-theme="dark"]
+    /* Hallmark · app-scope redesign · genre: atmospheric · tone: tablet-GM-reference · 2026-08-14
+     * palette: stage lantern — violet-black darkness + amber stage-gold (OKLCH) · typography: Yu Mincho + Hiragino Sans
+     * concept: 舞台灯火 — a GM operates in theatrical darkness lit by follow-spot amber
+     * default: light (script paper — cool violet-white) · dark: stage black (极暗 hue:270) · toggle: [data-theme="dark"]
      * pre-emit critique: P5 H5 E5 S5 R5 V5
      * contrast: pass · tokens: pass · motion: pass · focus: pass
      */
     :root {
       color-scheme: light;
 
-      /* Backgrounds — 調書紙（cool copy-paper / case-file white） */
-      --bg-0: oklch(98% 0.006 252);
-      --bg-1: oklch(96% 0.007 248);
-      --bg-2: oklch(93% 0.010 244);
-      --bg-3: oklch(89% 0.013 240);
+      /* Backgrounds — 台本紙（script paper: near-white with violet undertone） */
+      --bg-0: oklch(97% 0.005 272);
+      --bg-1: oklch(95% 0.007 268);
+      --bg-2: oklch(92% 0.009 264);
+      --bg-3: oklch(88% 0.012 260);
 
-      /* Accent — official seal crimson (公印深紅): darker, more saturated than terracotta */
-      --accent:      oklch(42% 0.215 14);
-      --accent-h:    oklch(34% 0.210 14);
-      --accent-dim:  oklch(42% 0.215 14 / 0.10);
-      --accent-glow: oklch(42% 0.215 14 / 0.18);
+      /* Accent — stage gold / follow-spot amber (緞帳金): hue:56 is theater amber, not terracotta */
+      --accent:      oklch(46% 0.185 56);
+      --accent-h:    oklch(38% 0.180 56);
+      --accent-dim:  oklch(46% 0.185 56 / 0.10);
+      --accent-glow: oklch(46% 0.185 56 / 0.18);
 
       /* Semantic — deep sage, deep amber, deep crimson */
       --green:     oklch(40% 0.120 155);
@@ -46,21 +47,21 @@
       --yellow:    oklch(45% 0.120 75);
       --red:       oklch(48% 0.165 22);
 
-      /* Text — 冷インク（cool-tinted ink on case-file paper） */
-      --text:     oklch(11% 0.028 255);
-      --text-mid: oklch(32% 0.022 248);
-      --text-dim: oklch(56% 0.015 244);
+      /* Text — 暖インク（warm fountain-pen ink on violet-white script paper） */
+      --text:     oklch(14% 0.012 55);
+      --text-mid: oklch(36% 0.014 52);
+      --text-dim: oklch(57% 0.010 268);
 
-      /* Borders — 罫線（cool rule lines, subtle） */
-      --border:   oklch(81% 0.012 244);
-      --border-h: oklch(65% 0.018 240);
+      /* Borders — 罫線（violet-grey rules, subtle） */
+      --border:   oklch(83% 0.010 264);
+      --border-h: oklch(68% 0.015 260);
 
       --radius:    8px;
       --radius-sm: 5px;
 
-      /* Shadows — 紙面の奥行き（cool undertone） */
-      --shadow-card: 0 1px 4px oklch(30% 0.010 250 / 0.09), 0 1px 0 oklch(30% 0.010 250 / 0.05);
-      --shadow-lift: 0 3px 10px oklch(30% 0.010 250 / 0.12), 0 1px 0 oklch(30% 0.010 250 / 0.06);
+      /* Shadows — 舞台の深み（violet undertone） */
+      --shadow-card: 0 1px 4px oklch(22% 0.006 268 / 0.09), 0 1px 0 oklch(22% 0.006 268 / 0.05);
+      --shadow-lift: 0 3px 10px oklch(22% 0.006 268 / 0.13), 0 1px 0 oklch(22% 0.006 268 / 0.06);
 
       /* Typography — 游明朝 for headings/labels; gothic for body */
       --font-mincho: 'Yu Mincho', 'YuMincho', 'Hiragino Mincho ProN', 'HGS明朝E', Georgia, serif;
@@ -71,10 +72,10 @@
       /* ── Token extensions (gate 48 compliance) ── */
 
       /* Accent surface */
-      --accent-ink:    oklch(97% 0.005 80);   /* text on --accent fill */
-      --accent-press:  oklch(22% 0.210 14);   /* deep pressed shadow for btn-primary */
-      --accent-tab:    oklch(42% 0.215 14 / 0.07); /* phase-tab hover bg */
-      --accent-tab-a:  oklch(42% 0.215 14 / 0.09); /* phase-tab active bg */
+      --accent-ink:    oklch(97% 0.005 80);   /* white text on amber button (passes contrast at L:46%) */
+      --accent-press:  oklch(26% 0.178 56);   /* deep pressed shadow for btn-primary */
+      --accent-tab:    oklch(46% 0.185 56 / 0.07); /* phase-tab hover bg */
+      --accent-tab-a:  oklch(46% 0.185 56 / 0.09); /* phase-tab active bg */
 
       /* Green alpha set */
       --green-4:   oklch(40% 0.120 155 / 0.04);
@@ -108,39 +109,39 @@
       --red-40:    oklch(48% 0.165 22 / 0.40);
       --red-50:    oklch(48% 0.165 22 / 0.50);
 
-      /* Overlay & shadows (light bg: softer, cool-tinted) */
-      --overlay-bg:    oklch(8% 0.012 252 / 0.78);
-      --shadow-deep:   oklch(25% 0.010 250 / 0.14);
-      --shadow-mid:    oklch(25% 0.010 250 / 0.07);
+      /* Overlay & shadows (light bg: softer, violet-tinted) */
+      --overlay-bg:    oklch(8% 0.008 270 / 0.80);
+      --shadow-deep:   oklch(20% 0.006 268 / 0.15);
+      --shadow-mid:    oklch(20% 0.006 268 / 0.08);
       --shadow-notif:  oklch(0% 0 0 / 0.20);
       --slider-shadow: oklch(20% 0 0 / 0.15);
       --shimmer-hi:    oklch(98% 0.005 80 / 0.50);
     }
 
-    /* ── Dark theme override — 証拠室ネイビー (evidence room navy) ── */
+    /* ── Dark theme override — 舞台の闇 (stage black: violet-black) ── */
     [data-theme="dark"] {
       color-scheme: dark;
-      --bg-0: oklch(12% 0.012 252);
-      --bg-1: oklch(16% 0.016 248);
-      --bg-2: oklch(21% 0.020 244);
-      --bg-3: oklch(28% 0.026 240);
-      --accent:      oklch(62% 0.205 14);
-      --accent-h:    oklch(54% 0.205 14);
-      --accent-dim:  oklch(62% 0.205 14 / 0.16);
-      --accent-glow: oklch(62% 0.205 14 / 0.28);
+      --bg-0: oklch(13% 0.006 272);
+      --bg-1: oklch(17% 0.009 268);
+      --bg-2: oklch(22% 0.012 264);
+      --bg-3: oklch(29% 0.015 260);
+      --accent:      oklch(68% 0.175 56);
+      --accent-h:    oklch(60% 0.175 56);
+      --accent-dim:  oklch(68% 0.175 56 / 0.16);
+      --accent-glow: oklch(68% 0.175 56 / 0.28);
       --green:     oklch(64% 0.095 155);
       --green-dim: oklch(64% 0.095 155 / 0.08);
       --yellow:    oklch(73% 0.100 75);
       --red:       oklch(61% 0.155 22);
-      --text:     oklch(94% 0.008 80);
-      --text-mid: oklch(75% 0.010 75);
-      --text-dim: oklch(60% 0.010 70);
-      --border:   oklch(24% 0.022 248);
-      --border-h: oklch(35% 0.030 244);
-      --accent-ink:    oklch(97% 0.005 80);
-      --accent-press:  oklch(38% 0.205 14);
-      --accent-tab:    oklch(62% 0.205 14 / 0.08);
-      --accent-tab-a:  oklch(62% 0.205 14 / 0.11);
+      --text:     oklch(92% 0.010 74);
+      --text-mid: oklch(76% 0.012 70);
+      --text-dim: oklch(60% 0.010 66);
+      --border:   oklch(22% 0.014 266);
+      --border-h: oklch(33% 0.018 262);
+      --accent-ink:    oklch(12% 0.010 58);
+      --accent-press:  oklch(44% 0.170 56);
+      --accent-tab:    oklch(68% 0.175 56 / 0.09);
+      --accent-tab-a:  oklch(68% 0.175 56 / 0.12);
       --green-4:   oklch(64% 0.095 155 / 0.04);
       --green-5:   oklch(64% 0.095 155 / 0.05);
       --green-6:   oklch(64% 0.095 155 / 0.06);
@@ -167,14 +168,14 @@
       --red-35:    oklch(61% 0.155 22 / 0.35);
       --red-40:    oklch(61% 0.155 22 / 0.40);
       --red-50:    oklch(61% 0.155 22 / 0.50);
-      --overlay-bg:    oklch(6% 0.010 252 / 0.90);
-      --shadow-deep:   oklch(4% 0.008 248 / 0.82);
-      --shadow-mid:    oklch(4% 0.008 248 / 0.56);
-      --shadow-card:   0 1px 4px oklch(4% 0.008 248 / 0.60), 0 1px 0 oklch(4% 0.008 248 / 0.32);
-      --shadow-lift:   0 3px 10px oklch(4% 0.008 248 / 0.70), 0 1px 0 oklch(4% 0.008 248 / 0.38);
-      --shadow-notif:  oklch(0% 0 0 / 0.60);
-      --slider-shadow: oklch(6% 0.010 248 / 0.65);
-      --shimmer-hi:    oklch(90% 0.006 80 / 0.06);
+      --overlay-bg:    oklch(5% 0.006 270 / 0.92);
+      --shadow-deep:   oklch(4% 0.005 268 / 0.85);
+      --shadow-mid:    oklch(4% 0.005 268 / 0.58);
+      --shadow-card:   0 1px 4px oklch(4% 0.005 268 / 0.65), 0 1px 0 oklch(4% 0.005 268 / 0.36);
+      --shadow-lift:   0 3px 10px oklch(4% 0.005 268 / 0.75), 0 1px 0 oklch(4% 0.005 268 / 0.42);
+      --shadow-notif:  oklch(0% 0 0 / 0.65);
+      --slider-shadow: oklch(5% 0.005 268 / 0.68);
+      --shimmer-hi:    oklch(90% 0.010 74 / 0.07);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -1232,7 +1233,7 @@
   <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-settings')">⚙ 設定</button>
   <button class="hm-btn" id="btn-fullscreen" onclick="closeHamburger();toggleMainFullscreen()">⛶ 全画面にする</button>
   <a class="hm-btn" href="help-bgm.html" target="_blank" onclick="closeHamburger()">? ヘルプ</a>
-  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0814-2</span>
+  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0814-3</span>
 </div>
 
 <nav id="phase-nav">
