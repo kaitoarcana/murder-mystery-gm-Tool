@@ -29,11 +29,11 @@
     :root {
       color-scheme: light;
 
-      /* Backgrounds — 台本紙（script paper: off-white with visible violet body — not snow） */
-      --bg-0: oklch(94% 0.014 272);
-      --bg-1: oklch(92% 0.017 268);
-      --bg-2: oklch(89% 0.020 264);
-      --bg-3: oklch(85% 0.023 260);
+      /* Backgrounds — 上質紙（program book paper: warm off-white, chroma low enough to avoid AI-cream） */
+      --bg-0: oklch(95% 0.008 72);
+      --bg-1: oklch(93% 0.011 70);
+      --bg-2: oklch(90% 0.014 68);
+      --bg-3: oklch(86% 0.017 66);
 
       /* Accent — stage gold / follow-spot amber (緞帳金): hue:56 is theater amber, not terracotta */
       --accent:      oklch(46% 0.185 56);
@@ -52,16 +52,16 @@
       --text-mid: oklch(36% 0.014 52);
       --text-dim: oklch(57% 0.010 268);
 
-      /* Borders — 罫線（violet-grey rules, subtle） */
-      --border:   oklch(83% 0.010 264);
-      --border-h: oklch(68% 0.015 260);
+      /* Borders — 罫線（warm-grey rules, harmonize with paper） */
+      --border:   oklch(83% 0.012 68);
+      --border-h: oklch(67% 0.016 64);
 
       --radius:    8px;
       --radius-sm: 5px;
 
-      /* Shadows — 舞台の深み（violet undertone） */
-      --shadow-card: 0 1px 4px oklch(22% 0.006 268 / 0.09), 0 1px 0 oklch(22% 0.006 268 / 0.05);
-      --shadow-lift: 0 3px 10px oklch(22% 0.006 268 / 0.13), 0 1px 0 oklch(22% 0.006 268 / 0.06);
+      /* Shadows — 紙面の深み（warm undertone, matches paper） */
+      --shadow-card: 0 1px 4px oklch(22% 0.008 62 / 0.09), 0 1px 0 oklch(22% 0.008 62 / 0.05);
+      --shadow-lift: 0 3px 10px oklch(22% 0.008 62 / 0.13), 0 1px 0 oklch(22% 0.008 62 / 0.06);
 
       /* Typography — 游明朝 for headings/labels; gothic for body */
       --font-mincho: 'Yu Mincho', 'YuMincho', 'Hiragino Mincho ProN', 'HGS明朝E', Georgia, serif;
@@ -109,10 +109,10 @@
       --red-40:    oklch(48% 0.165 22 / 0.40);
       --red-50:    oklch(48% 0.165 22 / 0.50);
 
-      /* Overlay & shadows (light bg: softer, violet-tinted) */
-      --overlay-bg:    oklch(8% 0.008 270 / 0.80);
-      --shadow-deep:   oklch(20% 0.006 268 / 0.15);
-      --shadow-mid:    oklch(20% 0.006 268 / 0.08);
+      /* Overlay & shadows (light bg: softer, warm-tinted) */
+      --overlay-bg:    oklch(8% 0.008 58 / 0.80);
+      --shadow-deep:   oklch(20% 0.006 62 / 0.15);
+      --shadow-mid:    oklch(20% 0.006 62 / 0.08);
       --shadow-notif:  oklch(0% 0 0 / 0.20);
       --slider-shadow: oklch(20% 0 0 / 0.15);
       --shimmer-hi:    oklch(98% 0.005 80 / 0.50);
@@ -1233,7 +1233,7 @@
   <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-settings')">⚙ 設定</button>
   <button class="hm-btn" id="btn-fullscreen" onclick="closeHamburger();toggleMainFullscreen()">⛶ 全画面にする</button>
   <a class="hm-btn" href="help-bgm.html" target="_blank" onclick="closeHamburger()">? ヘルプ</a>
-  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0814-4</span>
+  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0814-5</span>
 </div>
 
 <nav id="phase-nav">
