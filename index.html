@@ -306,7 +306,7 @@
     /* ── Phase BGM modal tabs ── */
     .phb-tab-btn {
       background: none; border: none; border-bottom: 2px solid transparent;
-      color: var(--text-mid); cursor: pointer; font-size: 13px; font-weight: 600;
+      color: var(--text); cursor: pointer; font-size: 13px; font-weight: 700; font-family: var(--font-mincho);
       letter-spacing: 0.03em; padding: 10px 14px 9px; transition: color 0.15s;
     }
     .phb-tab-btn:hover { color: var(--text); }
@@ -405,9 +405,9 @@
     }
     .panel:last-child { border-right: none; }
     .section-title {
-      font-size: 13px; font-family: var(--font-mincho); font-weight: 600;
+      font-size: 13px; font-family: var(--font-mincho); font-weight: 700;
       letter-spacing: 0.06em;
-      color: var(--text-mid); padding-bottom: 7px; border-bottom: 1px solid var(--border);
+      color: var(--text); padding-bottom: 7px; border-bottom: 1px solid var(--border);
       margin-bottom: 2px;
     }
     /* ── Timer ── */
@@ -456,7 +456,7 @@
       background: var(--bg-1); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 12px;
     }
-    .dur-row label { display: block; font-size: 13px; color: var(--text-mid); font-weight: 600; margin-bottom: 8px; }
+    .dur-row label { display: block; font-size: 13px; color: var(--text); font-weight: 700; font-family: var(--font-mincho); margin-bottom: 8px; }
     .dur-fields { display: flex; gap: 8px; align-items: center; }
 
     /* ── Drum Picker (touch-friendly time selector) ── */
@@ -564,7 +564,7 @@
     .now-playing.idle .np-btns button { opacity: 0.2; pointer-events: none; }
     /* ── Volume ── */
     .vol-row { display: flex; align-items: center; gap: 10px; }
-    .vol-row span { font-size: 13px; color: var(--text-mid); font-weight: 600; }
+    .vol-row span { font-size: 13px; color: var(--text); font-weight: 700; font-family: var(--font-mincho); }
     #vol-target-btn {
       font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
       cursor: pointer; letter-spacing: .3px; border: none; flex-shrink: 0;
@@ -690,7 +690,7 @@
     .inline-cond-header {
       display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
     }
-    .inline-cond-label { font-size: 13px; color: var(--text-mid); font-weight: 600; flex-shrink: 0; }
+    .inline-cond-label { font-size: 13px; color: var(--text); font-weight: 700; font-family: var(--font-mincho); flex-shrink: 0; }
     .cond-note-editor {
       min-height: 60px; padding: 8px 10px;
       border: 1px solid var(--border); border-radius: 4px;
@@ -777,7 +777,7 @@
     .score-cond-row { display:flex; align-items:center; gap:6px; padding:7px 10px; background:var(--bg-2); border:1px solid var(--border); border-radius:5px; margin-bottom:5px; }
     .overlay-ctrl { display:flex; align-items:center; gap:8px; padding:10px 14px; background:var(--accent-dim); border:1px solid var(--accent); border-radius:7px; margin-top:8px; }
     .rec-table { border-collapse:collapse; font-size:12px; }
-    .rec-table th { text-align:left; padding:5px 8px; border-bottom:1px solid var(--border); font-size:13px; font-family:var(--font-mincho); color:var(--text-mid); font-weight:700; letter-spacing:0.04em; position:relative; user-select:none; }
+    .rec-table th { text-align:left; padding:5px 8px; border-bottom:1px solid var(--border); font-size:13px; font-family:var(--font-mincho); color:var(--text); font-weight:700; letter-spacing:0.04em; position:relative; user-select:none; }
     .rec-table td { padding:5px 8px; border-bottom:1px solid var(--border); }
     .rec-fixed { color:var(--text-mid); font-size:13px; }
     .sec-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
@@ -1233,7 +1233,7 @@
   <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-settings')">⚙ 設定</button>
   <button class="hm-btn" id="btn-fullscreen" onclick="closeHamburger();toggleMainFullscreen()">⛶ 全画面にする</button>
   <a class="hm-btn" href="help-bgm.html" target="_blank" onclick="closeHamburger()">? ヘルプ</a>
-  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0814-11</span>
+  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0814-12</span>
 </div>
 
 <nav id="phase-nav">
