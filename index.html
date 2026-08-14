@@ -20,25 +20,25 @@
       font-style: italic; font-weight: 400;
     }
     /* Hallmark · app-scope redesign · genre: editorial · tone: tablet-GM-reference · 2026-08-14
-     * palette: warm cream paper + cinnabar seal-red (OKLCH) · typography: Yu Mincho + Hiragino Sans
-     * default: light (生成り紙面) · dark: aged parchment (琥珀羊皮紙) · toggle: [data-theme="dark"]
+     * palette: case-file cool white + official-seal deep crimson (OKLCH) · typography: Yu Mincho + Hiragino Sans
+     * default: light (調書紙 — cool copy-paper) · dark: evidence room navy · toggle: [data-theme="dark"]
      * pre-emit critique: P5 H5 E5 S5 R5 V5
      * contrast: pass · tokens: pass · motion: pass · focus: pass
      */
     :root {
       color-scheme: light;
 
-      /* Backgrounds — 生成り紙（warm cream paper） */
-      --bg-0: oklch(96% 0.032 82);
-      --bg-1: oklch(93% 0.036 80);
-      --bg-2: oklch(89% 0.040 78);
-      --bg-3: oklch(84% 0.045 76);
+      /* Backgrounds — 調書紙（cool copy-paper / case-file white） */
+      --bg-0: oklch(98% 0.006 252);
+      --bg-1: oklch(96% 0.007 248);
+      --bg-2: oklch(93% 0.010 244);
+      --bg-3: oklch(89% 0.013 240);
 
-      /* Accent — cinnabar/seal red (朱肉): darker for light bg */
-      --accent:      oklch(48% 0.180 22);
-      --accent-h:    oklch(40% 0.175 22);
-      --accent-dim:  oklch(48% 0.180 22 / 0.10);
-      --accent-glow: oklch(48% 0.180 22 / 0.18);
+      /* Accent — official seal crimson (公印深紅): darker, more saturated than terracotta */
+      --accent:      oklch(42% 0.215 14);
+      --accent-h:    oklch(34% 0.210 14);
+      --accent-dim:  oklch(42% 0.215 14 / 0.10);
+      --accent-glow: oklch(42% 0.215 14 / 0.18);
 
       /* Semantic — deep sage, deep amber, deep crimson */
       --green:     oklch(40% 0.120 155);
@@ -46,21 +46,21 @@
       --yellow:    oklch(45% 0.120 75);
       --red:       oklch(48% 0.165 22);
 
-      /* Text — 墨インク（dark ink on paper） */
-      --text:     oklch(10% 0.048 52);
-      --text-mid: oklch(28% 0.042 56);
-      --text-dim: oklch(48% 0.030 62);
+      /* Text — 冷インク（cool-tinted ink on case-file paper） */
+      --text:     oklch(11% 0.028 255);
+      --text-mid: oklch(32% 0.022 248);
+      --text-dim: oklch(56% 0.015 244);
 
-      /* Borders — 罫線（warm, ruled-paper · visible warm line） */
-      --border:   oklch(72% 0.055 78);
-      --border-h: oklch(56% 0.068 74);
+      /* Borders — 罫線（cool rule lines, subtle） */
+      --border:   oklch(81% 0.012 244);
+      --border-h: oklch(65% 0.018 240);
 
       --radius:    8px;
       --radius-sm: 5px;
 
-      /* Shadows — 紙面の奥行き */
-      --shadow-card: 0 1px 4px oklch(30% 0.018 60 / 0.10), 0 1px 0 oklch(30% 0.018 60 / 0.06);
-      --shadow-lift: 0 3px 10px oklch(30% 0.018 60 / 0.13), 0 1px 0 oklch(30% 0.018 60 / 0.07);
+      /* Shadows — 紙面の奥行き（cool undertone） */
+      --shadow-card: 0 1px 4px oklch(30% 0.010 250 / 0.09), 0 1px 0 oklch(30% 0.010 250 / 0.05);
+      --shadow-lift: 0 3px 10px oklch(30% 0.010 250 / 0.12), 0 1px 0 oklch(30% 0.010 250 / 0.06);
 
       /* Typography — 游明朝 for headings/labels; gothic for body */
       --font-mincho: 'Yu Mincho', 'YuMincho', 'Hiragino Mincho ProN', 'HGS明朝E', Georgia, serif;
@@ -71,10 +71,10 @@
       /* ── Token extensions (gate 48 compliance) ── */
 
       /* Accent surface */
-      --accent-ink:    oklch(97% 0.005 80);   /* text on --accent or --red fill */
-      --accent-press:  oklch(30% 0.175 22);   /* deep pressed shadow for btn-primary */
-      --accent-tab:    oklch(48% 0.180 22 / 0.08); /* phase-tab hover bg */
-      --accent-tab-a:  oklch(48% 0.180 22 / 0.10); /* phase-tab active bg */
+      --accent-ink:    oklch(97% 0.005 80);   /* text on --accent fill */
+      --accent-press:  oklch(22% 0.210 14);   /* deep pressed shadow for btn-primary */
+      --accent-tab:    oklch(42% 0.215 14 / 0.07); /* phase-tab hover bg */
+      --accent-tab-a:  oklch(42% 0.215 14 / 0.09); /* phase-tab active bg */
 
       /* Green alpha set */
       --green-4:   oklch(40% 0.120 155 / 0.04);
@@ -108,39 +108,39 @@
       --red-40:    oklch(48% 0.165 22 / 0.40);
       --red-50:    oklch(48% 0.165 22 / 0.50);
 
-      /* Overlay & shadows (light bg: softer) */
-      --overlay-bg:    oklch(9% 0.015 48 / 0.75);
-      --shadow-deep:   oklch(30% 0.015 50 / 0.15);
-      --shadow-mid:    oklch(30% 0.015 50 / 0.08);
+      /* Overlay & shadows (light bg: softer, cool-tinted) */
+      --overlay-bg:    oklch(8% 0.012 252 / 0.78);
+      --shadow-deep:   oklch(25% 0.010 250 / 0.14);
+      --shadow-mid:    oklch(25% 0.010 250 / 0.07);
       --shadow-notif:  oklch(0% 0 0 / 0.20);
       --slider-shadow: oklch(20% 0 0 / 0.15);
       --shimmer-hi:    oklch(98% 0.005 80 / 0.50);
     }
 
-    /* ── Dark theme override — 琥珀羊皮紙 (aged amber parchment) ── */
+    /* ── Dark theme override — 証拠室ネイビー (evidence room navy) ── */
     [data-theme="dark"] {
       color-scheme: dark;
-      --bg-0: oklch(13% 0.022 70);
-      --bg-1: oklch(20% 0.062 68);
-      --bg-2: oklch(27% 0.078 66);
-      --bg-3: oklch(35% 0.092 64);
-      --accent:      oklch(62% 0.155 22);
-      --accent-h:    oklch(54% 0.155 22);
-      --accent-dim:  oklch(62% 0.155 22 / 0.15);
-      --accent-glow: oklch(62% 0.155 22 / 0.26);
+      --bg-0: oklch(12% 0.012 252);
+      --bg-1: oklch(16% 0.016 248);
+      --bg-2: oklch(21% 0.020 244);
+      --bg-3: oklch(28% 0.026 240);
+      --accent:      oklch(62% 0.205 14);
+      --accent-h:    oklch(54% 0.205 14);
+      --accent-dim:  oklch(62% 0.205 14 / 0.16);
+      --accent-glow: oklch(62% 0.205 14 / 0.28);
       --green:     oklch(64% 0.095 155);
       --green-dim: oklch(64% 0.095 155 / 0.08);
       --yellow:    oklch(73% 0.100 75);
       --red:       oklch(61% 0.155 22);
-      --text:     oklch(95% 0.018 86);
-      --text-mid: oklch(78% 0.025 80);
-      --text-dim: oklch(62% 0.020 75);
-      --border:   oklch(30% 0.065 68);
-      --border-h: oklch(42% 0.080 65);
+      --text:     oklch(94% 0.008 80);
+      --text-mid: oklch(75% 0.010 75);
+      --text-dim: oklch(60% 0.010 70);
+      --border:   oklch(24% 0.022 248);
+      --border-h: oklch(35% 0.030 244);
       --accent-ink:    oklch(97% 0.005 80);
-      --accent-press:  oklch(40% 0.155 22);
-      --accent-tab:    oklch(60% 0.155 22 / 0.07);
-      --accent-tab-a:  oklch(60% 0.155 22 / 0.10);
+      --accent-press:  oklch(38% 0.205 14);
+      --accent-tab:    oklch(62% 0.205 14 / 0.08);
+      --accent-tab-a:  oklch(62% 0.205 14 / 0.11);
       --green-4:   oklch(64% 0.095 155 / 0.04);
       --green-5:   oklch(64% 0.095 155 / 0.05);
       --green-6:   oklch(64% 0.095 155 / 0.06);
@@ -167,14 +167,14 @@
       --red-35:    oklch(61% 0.155 22 / 0.35);
       --red-40:    oklch(61% 0.155 22 / 0.40);
       --red-50:    oklch(61% 0.155 22 / 0.50);
-      --overlay-bg:    oklch(6% 0.020 60 / 0.88);
-      --shadow-deep:   oklch(4% 0.015 60 / 0.80);
-      --shadow-mid:    oklch(4% 0.015 60 / 0.55);
-      --shadow-card:   0 1px 4px oklch(4% 0.015 60 / 0.55), 0 1px 0 oklch(4% 0.015 60 / 0.30);
-      --shadow-lift:   0 3px 10px oklch(4% 0.015 60 / 0.65), 0 1px 0 oklch(4% 0.015 60 / 0.35);
+      --overlay-bg:    oklch(6% 0.010 252 / 0.90);
+      --shadow-deep:   oklch(4% 0.008 248 / 0.82);
+      --shadow-mid:    oklch(4% 0.008 248 / 0.56);
+      --shadow-card:   0 1px 4px oklch(4% 0.008 248 / 0.60), 0 1px 0 oklch(4% 0.008 248 / 0.32);
+      --shadow-lift:   0 3px 10px oklch(4% 0.008 248 / 0.70), 0 1px 0 oklch(4% 0.008 248 / 0.38);
       --shadow-notif:  oklch(0% 0 0 / 0.60);
-      --slider-shadow: oklch(6% 0.015 60 / 0.65);
-      --shimmer-hi:    oklch(90% 0.012 84 / 0.06);
+      --slider-shadow: oklch(6% 0.010 248 / 0.65);
+      --shimmer-hi:    oklch(90% 0.006 80 / 0.06);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -1232,7 +1232,7 @@
   <button class="hm-btn hm-live-only" onclick="closeHamburger();openModal('ov-settings')">⚙ 設定</button>
   <button class="hm-btn" id="btn-fullscreen" onclick="closeHamburger();toggleMainFullscreen()">⛶ 全画面にする</button>
   <a class="hm-btn" href="help-bgm.html" target="_blank" onclick="closeHamburger()">? ヘルプ</a>
-  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0814-1</span>
+  <span id="app-version" style="font-size:14px;color:var(--text-mid);padding:4px 14px 6px;display:block">Ver:0814-2</span>
 </div>
 
 <nav id="phase-nav">
